@@ -143,4 +143,3 @@ def logout():
 
 # Register blueprint
 app.register_blueprint(auth_bp)
-
