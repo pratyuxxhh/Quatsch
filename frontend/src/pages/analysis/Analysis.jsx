@@ -1,12 +1,14 @@
 import React, { useState, useMemo, useEffect } from "react";
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
-import { MapContainer, TileLayer, Marker, useMap, Popup } from "react-leaflet";
+import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import ParticlesBackground from "../../components/ParticlesBackground";
 
 const years = Array.from({ length: 10 }, (_, i) => 2016 + i);
 
+// eslint-disable-next-line no-unused-vars
 const generateMockGrowth = (startYear, endYear) => {
   const data = [];
   let value = 100;
@@ -18,6 +20,7 @@ const generateMockGrowth = (startYear, endYear) => {
   return data;
 };
 
+// eslint-disable-next-line no-unused-vars
 const buildGrowthInsights = (region, data) => {
   if (!region || !data.length) return [];
   const growth = data[data.length - 1].value - data[0].value;
@@ -451,7 +454,6 @@ const Analysis = () => {
                                 const maxVal = Math.max(...growthData.timeline.map((g) => 
                                   g.sector_breakdown.rural + g.sector_breakdown.urban + g.sector_breakdown.industrial
                                 ));
-                                const total = d.sector_breakdown.rural + d.sector_breakdown.urban + d.sector_breakdown.industrial;
                                 const ruralH = (d.sector_breakdown.rural / maxVal) * 180;
                                 const urbanH = (d.sector_breakdown.urban / maxVal) * 180;
                                 const industrialH = (d.sector_breakdown.industrial / maxVal) * 180;

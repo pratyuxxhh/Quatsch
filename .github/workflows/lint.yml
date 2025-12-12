@@ -1,0 +1,76 @@
+# File: .github/workflows/lint.yml
+
+name: Code Quality Checks (Linting)
+
+# 1. Ensure both workflows run on: pull request and push to main branches
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  # Optional: Allows manual trigger from the GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  # =======================================================
+  # JOB 1: ESLint (JavaScript/Frontend)
+  # =======================================================
+  eslint-check:
+    name: 🎨 ESLint (Frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          # Use a modern LTS version
+          node-version: '20'
+          # Use cache for faster dependency installation
+          cache: 'npm'
+          # Tell the action where the lock file is located
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        # Run inside the frontend directory
+        run: npm install
+        working-directory: frontend
+
+      - name: Run ESLint
+        # This executes the "lint" script defined in frontend/package.json
+        run: npm run lint
+        working-directory: frontend
+
+  # =======================================================
+  # JOB 2: Flake8 (Python/Backend)
+  # =======================================================
+  flake8-check:
+    name: 🐍 Flake8 (Backend)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          # Choose a compatible Python version
+          python-version: '3.10'
+
+      - name: Install Flake8 and Backend Dependencies
+        # Assuming you use a requirements.txt in the backend/ directory or root
+        run: |
+          pip install flake8
+          if [ -f backend/requirements.txt ]; then
+            pip install -r backend/requirements.txt
+          fi
+          # Or if requirements is at the root: pip install -r requirements.txt
+
+      - name: Run Flake8 on Backend Code
+        # Run Flake8 against the 'backend' directory.
+        # It will use the configuration from the .flake8 file if present.
+        run: flake8 backend/
+

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../context/AuthContext';
 
@@ -9,7 +10,6 @@ const Login = () => {
   const [step, setStep] = useState('email'); // 'email' or 'otp'
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [otpSent, setOtpSent] = useState(false);
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
@@ -22,7 +22,6 @@ const Login = () => {
     
     if (result.success) {
       setMessage({ type: 'success', text: result.message });
-      setOtpSent(true);
       setStep('otp');
     } else {
       setMessage({ type: 'error', text: result.message });
