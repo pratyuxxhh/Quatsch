@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import ParticlesBackground from '../../components/ParticlesBackground';
 
 const years = Array.from({ length: 10 }, (_, i) => 2016 + i);
 
@@ -39,8 +40,9 @@ const Compare = () => {
   };
 
   return (
-    <div className="min-h-screen w-full bg-black pt-20 flex justify-center px-4 pb-10">
-      <div className="w-full max-w-6xl">
+    <div className="relative min-h-screen w-full bg-black pt-20 flex justify-center px-4 pb-10">
+      <ParticlesBackground />
+      <div className="relative z-10 w-full max-w-6xl">
         <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">Compare</h1>
         <p className="text-gray-300 mb-6 text-sm sm:text-base">
           Select a region and two years to compare night lights data. Blend images and generate heatmaps to analyze brightness changes.

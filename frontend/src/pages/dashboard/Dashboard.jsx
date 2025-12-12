@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import ParticlesBackground from "../../components/ParticlesBackground";
 
 // Fix for default marker icons in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -232,8 +233,9 @@ const Dashboard = () => {
   const handleYearChange = (e) => setSelectedYear(parseInt(e.target.value, 10));
 
   return (
-    <div className="min-h-screen w-full bg-black pt-20">
-      <div className="max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 pb-6 flex flex-col gap-4 h-[calc(100vh-5rem)]">
+    <div className="relative min-h-screen w-full bg-black pt-20">
+      <ParticlesBackground />
+      <div className="relative z-10 max-w-[1800px] mx-auto px-4 sm:px-6 lg:px-8 pb-6 flex flex-col gap-4 h-[calc(100vh-5rem)]">
         <form onSubmit={handleSearch} className="max-w-2xl w-full">
           <div className="relative">
             <input
@@ -270,8 +272,8 @@ const Dashboard = () => {
             <div className="relative flex-1 min-h-0 bg-gray-900 rounded-lg overflow-hidden border border-gray-700 shadow-2xl">
               <MapContainer center={mapCenter} zoom={mapZoom} className="w-full h-full">
                 <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                  url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 />
                 <MapController center={mapCenter} zoom={mapZoom} />
               </MapContainer>
