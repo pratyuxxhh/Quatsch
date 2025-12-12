@@ -1,15 +1,24 @@
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
+  const { authenticated, user, logout } = useAuth();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
 
   const isActive = (path) => location.pathname === path;
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+    setIsMenuOpen(false);
+  };
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 w-full bg-transparent backdrop-blur-sm">
@@ -59,6 +68,28 @@ const Navbar = () => {
               >
                 About
               </Link>
+              {authenticated ? (
+                <>
+                  <span className="px-3 py-2 text-sm text-cyan-400">
+                    {user?.email}
+                  </span>
+                  <button
+                    onClick={handleLogout}
+                    className="px-3 py-2 text-sm font-medium text-gray-300 hover:text-white transition-colors duration-200"
+                  >
+                    Logout
+                  </button>
+                </>
+              ) : (
+                <Link
+                  to="/login"
+                  className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+                    isActive('/login') ? 'text-white' : 'text-gray-300 hover:text-white'
+                  }`}
+                >
+                  Login
+                </Link>
+              )}
             </div>
           </div>
 
@@ -157,6 +188,31 @@ const Navbar = () => {
             >
               About
             </Link>
+            {authenticated ? (
+              <>
+                <div className="px-3 py-2 text-base font-medium text-cyan-400">
+                  {user?.email}
+                </div>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                  }}
+                  className="block w-full text-left px-3 py-2 text-base font-medium text-gray-300 hover:text-white transition-colors duration-200"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/login"
+                className={`block px-3 py-2 text-base font-medium transition-colors duration-200 ${
+                  isActive('/login') ? 'text-white' : 'text-gray-300 hover:text-white'
+                }`}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Login
+              </Link>
+            )}
           </div>
         </div>
       )}
