@@ -28,6 +28,21 @@ export const AuthProvider = ({ children }) => {
         method: 'GET',
         credentials: 'include',
       });
+      
+      // Check if response is ok before parsing JSON
+      if (!response.ok) {
+        // Try to parse error message from response
+        try {
+          const errorData = await response.json();
+          console.error('Session check error:', errorData.message || `Server error: ${response.status}`);
+        } catch {
+          console.error('Session check error:', `Server error: ${response.status} ${response.statusText}`);
+        }
+        setUser(null);
+        setAuthenticated(false);
+        return;
+      }
+      
       const data = await response.json();
       
       if (data.success && data.authenticated) {
@@ -38,7 +53,12 @@ export const AuthProvider = ({ children }) => {
         setAuthenticated(false);
       }
     } catch (error) {
-      console.error('Error checking session:', error);
+      // Only log network errors, don't show error to user for session check
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        console.error('Network error checking session. Backend server may not be running.');
+      } else {
+        console.error('Error checking session:', error);
+      }
       setUser(null);
       setAuthenticated(false);
     } finally {
@@ -56,12 +76,37 @@ export const AuthProvider = ({ children }) => {
         credentials: 'include',
         body: JSON.stringify({ email }),
       });
+      
+      // Check if response is ok before parsing JSON
+      if (!response.ok) {
+        // Try to parse error message from response
+        try {
+          const errorData = await response.json();
+          return {
+            success: false,
+            message: errorData.message || `Server error: ${response.status}`,
+          };
+        } catch {
+          return {
+            success: false,
+            message: `Server error: ${response.status} ${response.statusText}`,
+          };
+        }
+      }
+      
       const data = await response.json();
       return data;
     } catch (error) {
+      // Only show "backend server is not running" for actual network errors
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        return {
+          success: false,
+          message: 'Network error. Please check if the backend server is running.',
+        };
+      }
       return {
         success: false,
-        message: 'Network error. Please check if the backend server is running.',
+        message: `An error occurred: ${error.message}`,
       };
     }
   };
@@ -76,6 +121,24 @@ export const AuthProvider = ({ children }) => {
         credentials: 'include',
         body: JSON.stringify({ email, otp }),
       });
+      
+      // Check if response is ok before parsing JSON
+      if (!response.ok) {
+        // Try to parse error message from response
+        try {
+          const errorData = await response.json();
+          return {
+            success: false,
+            message: errorData.message || `Server error: ${response.status}`,
+          };
+        } catch {
+          return {
+            success: false,
+            message: `Server error: ${response.status} ${response.statusText}`,
+          };
+        }
+      }
+      
       const data = await response.json();
       
       if (data.success) {
@@ -85,9 +148,16 @@ export const AuthProvider = ({ children }) => {
       
       return data;
     } catch (error) {
+      // Only show "backend server is not running" for actual network errors
+      if (error.name === 'TypeError' && error.message.includes('fetch')) {
+        return {
+          success: false,
+          message: 'Network error. Please check if the backend server is running.',
+        };
+      }
       return {
         success: false,
-        message: 'Network error. Please check if the backend server is running.',
+        message: `An error occurred: ${error.message}`,
       };
     }
   };

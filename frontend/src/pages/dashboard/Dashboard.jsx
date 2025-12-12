@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { MapContainer, TileLayer, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, useMap, CircleMarker, Popup } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import ParticlesBackground from "../../components/ParticlesBackground";
@@ -206,6 +206,49 @@ const Dashboard = () => {
   const [mapZoom, setMapZoom] = useState(2);
   const [selectedYear, setSelectedYear] = useState(2024);
   const [insights, setInsights] = useState([]);
+  const [nightlightsData, setNightlightsData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const API_BASE_URL = 'http://localhost:5000';
+
+  // Fetch nightlights data when year changes
+  useEffect(() => {
+    const fetchNightlightsData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/data/nightlights/${selectedYear}?sample_rate=15`, {
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch data: ${response.status}`);
+        }
+        
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          setNightlightsData(result.data);
+          // Update map center to data center if available
+          if (result.data.center) {
+            setMapCenter([result.data.center.lat, result.data.center.lon]);
+            setMapZoom(7);
+          }
+        } else {
+          throw new Error(result.message || 'Failed to load data');
+        }
+      } catch (err) {
+        console.error('Error fetching nightlights data:', err);
+        setError(err.message);
+        setNightlightsData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchNightlightsData();
+  }, [selectedYear]);
 
   useEffect(() => {
     if (selectedRegion) {
@@ -276,11 +319,67 @@ const Dashboard = () => {
                   url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
                 />
                 <MapController center={mapCenter} zoom={mapZoom} />
+                
+                {/* Display nightlights data points */}
+                {nightlightsData && nightlightsData.data_points && nightlightsData.data_points.map((point, index) => {
+                  // Calculate color based on brightness value (cyan scale)
+                  const maxValue = nightlightsData.metadata?.statistics?.max || 100;
+                  const normalizedValue = Math.min(point.value / maxValue, 1);
+                  const opacity = Math.max(normalizedValue * 0.8, 0.3);
+                  const radius = Math.max(normalizedValue * 8, 2);
+                  
+                  return (
+                    <CircleMarker
+                      key={index}
+                      center={[point.lat, point.lon]}
+                      radius={radius}
+                      pathOptions={{
+                        color: '#06b6d4',
+                        fillColor: '#06b6d4',
+                        fillOpacity: opacity,
+                        weight: 0.5,
+                      }}
+                    >
+                      <Popup>
+                        <div className="text-sm">
+                          <p className="font-semibold">Nightlights Data</p>
+                          <p>Lat: {point.lat.toFixed(4)}</p>
+                          <p>Lon: {point.lon.toFixed(4)}</p>
+                          <p>Radiance: {point.value.toFixed(2)} nW</p>
+                        </div>
+                      </Popup>
+                    </CircleMarker>
+                  );
+                })}
               </MapContainer>
-              {selectedRegion && (
+              {loading && (
                 <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-lg border border-gray-600">
                   <p className="text-white text-sm font-medium">
-                    Viewing: <span className="text-cyan-400 capitalize">{selectedRegion}</span>
+                    Loading nightlights data...
+                  </p>
+                </div>
+              )}
+              {error && (
+                <div className="absolute top-4 left-4 bg-red-900/70 backdrop-blur-sm px-4 py-2 rounded-lg border border-red-600">
+                  <p className="text-red-300 text-sm font-medium">
+                    Error: {error}
+                  </p>
+                </div>
+              )}
+              {nightlightsData && !loading && (
+                <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-lg border border-gray-600">
+                  <p className="text-white text-sm font-medium">
+                    Year: <span className="text-cyan-400">{selectedYear}</span>
+                  </p>
+                  <p className="text-gray-400 text-xs mt-1">
+                    {nightlightsData.data_points?.length || 0} data points
+                  </p>
+                </div>
+              )}
+              {selectedRegion && (
+                <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-lg border border-gray-600">
+                  <p className="text-white text-sm font-medium">
+                    Region: <span className="text-cyan-400 capitalize">{selectedRegion}</span>
                   </p>
                 </div>
               )}

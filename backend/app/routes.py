@@ -1,10 +1,19 @@
+
 from flask import Blueprint, request, jsonify, session
 from app.main import app
 from app.auth import generate_otp, send_otp_email, store_otp, verify_otp, cleanup_expired_otps
+from app.tif_extractor import extract_tif_to_json, get_available_years, get_tif_file_path
 import re
+import os
 
 # Create blueprint for auth routes
 auth_bp = Blueprint('auth', __name__)
+
+# Create blueprint for data routes
+data_bp = Blueprint('data', __name__)
+
+# Path to raw data directory
+RAW_DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'raw', 'NightLights_Bright_Tamil Nadu')
 
 
 def is_valid_email(email: str) -> bool:
@@ -141,5 +150,64 @@ def logout():
         }), 500
 
 
-# Register blueprint
+@data_bp.route('/api/data/nightlights/<int:year>', methods=['GET'])
+def get_nightlights_data(year):
+    """Get nightlights data for a specific year"""
+    try:
+        # Get sample rate from query parameter (default: 10 for performance)
+        sample_rate = int(request.args.get('sample_rate', 10))
+        
+        # Validate sample rate
+        if sample_rate < 1 or sample_rate > 100:
+            sample_rate = 10
+        
+        # Get TIF file path for the year
+        tif_path = get_tif_file_path(year, RAW_DATA_DIR)
+        
+        if not tif_path:
+            return jsonify({
+                'success': False,
+                'message': f'No data found for year {year}'
+            }), 404
+        
+        # Extract data to JSON
+        data = extract_tif_to_json(tif_path, sample_rate=sample_rate)
+        
+        return jsonify({
+            'success': True,
+            'data': data
+        }), 200
+        
+    except FileNotFoundError as e:
+        return jsonify({
+            'success': False,
+            'message': str(e)
+        }), 404
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'An error occurred: {str(e)}'
+        }), 500
+
+
+@data_bp.route('/api/data/available-years', methods=['GET'])
+def get_available_years_route():
+    """Get list of available years with nightlights data"""
+    try:
+        years = get_available_years(RAW_DATA_DIR)
+        
+        return jsonify({
+            'success': True,
+            'years': years
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'An error occurred: {str(e)}'
+        }), 500
+
+
+# Register blueprints
 app.register_blueprint(auth_bp)
+app.register_blueprint(data_bp)
