@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ParticlesBackground from '../../components/ParticlesBackground';
 
@@ -11,17 +11,66 @@ const Compare = () => {
   const [showBlender, setShowBlender] = useState(false);
   const [showHeatmap, setShowHeatmap] = useState(false);
   const [transparency, setTransparency] = useState(50);
+  const [comparisonData, setComparisonData] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // Pan and zoom state
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const imageContainerRef = useRef(null);
 
-  // Dummy image URLs - replace with actual backend URLs later
-  const dummyImage1 = 'https://via.placeholder.com/800x600/1a1a2e/00d4ff?text=Night+Lights+' + year1;
-  const dummyImage2 = 'https://via.placeholder.com/800x600/16213e/00d4ff?text=Night+Lights+' + year2;
-  const dummyHeatmap = 'https://via.placeholder.com/800x600/ff6b6b/ffffff?text=Heatmap+Comparison';
+  const API_BASE_URL = 'http://localhost:5000';
+
+  // Fetch comparison data when years are selected
+  useEffect(() => {
+    const fetchComparison = async () => {
+      if (!showBlender || !region || !year1 || !year2) {
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/compare?region=${encodeURIComponent(region)}&year1=${year1}&year2=${year2}`,
+          {
+            credentials: 'include',
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch comparison: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+          setComparisonData(result);
+        } else {
+          throw new Error(result.message || 'Failed to load comparison data');
+        }
+      } catch (err) {
+        console.error('Error fetching comparison:', err);
+        setError(err.message);
+        setComparisonData(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchComparison();
+  }, [showBlender, region, year1, year2]);
 
   const handleCompare = (e) => {
     e.preventDefault();
     if (region.trim() && year1 && year2) {
       setShowBlender(true);
-      setShowHeatmap(false); // Reset heatmap when new comparison is made
+      setShowHeatmap(false);
+      setComparisonData(null);
     }
   };
 
@@ -30,13 +79,66 @@ const Compare = () => {
   };
 
   const handleDownloadHeatmap = () => {
-    // Create a temporary link to download the heatmap
-    const link = document.createElement('a');
-    link.href = dummyHeatmap;
-    link.download = `heatmap_${region}_${year1}_vs_${year2}.png`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Placeholder for heatmap download
+    alert('Heatmap download feature coming soon');
+  };
+
+  // Pan and zoom handlers
+  const handleWheel = (e) => {
+    e.preventDefault();
+    const delta = e.deltaY * -0.001;
+    const newZoom = Math.min(Math.max(0.5, zoom + delta), 3);
+    setZoom(newZoom);
+  };
+
+  const handleMouseDown = (e) => {
+    if (e.button !== 0) return; // Only handle left mouse button
+    setIsDragging(true);
+    setDragStart({
+      x: e.clientX - pan.x,
+      y: e.clientY - pan.y,
+    });
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+    setPan({
+      x: e.clientX - dragStart.x,
+      y: e.clientY - dragStart.y,
+    });
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+  };
+
+  const handleResetView = () => {
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  };
+
+  // Touch handlers for mobile
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      setIsDragging(true);
+      setDragStart({
+        x: e.touches[0].clientX - pan.x,
+        y: e.touches[0].clientY - pan.y,
+      });
+    }
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging || e.touches.length !== 1) return;
+    e.preventDefault();
+    setPan({
+      x: e.touches[0].clientX - dragStart.x,
+      y: e.touches[0].clientY - dragStart.y,
+    });
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
   };
 
   return (
@@ -148,66 +250,375 @@ const Compare = () => {
                   </button>
                 </div>
 
-                {/* Image Blender */}
-                <div className="relative w-full aspect-video bg-gray-800 rounded-lg overflow-hidden border border-gray-700">
-                  {/* Base Image (Year 1) */}
-                  <img
-                    src={dummyImage1}
-                    alt={`Night Lights ${year1}`}
-                    className="absolute inset-0 w-full h-full object-cover"
-                  />
-                  {/* Overlay Image (Year 2) with transparency */}
-                  <div
-                    className="absolute inset-0 w-full h-full"
-                    style={{
-                      opacity: transparency / 100,
-                    }}
-                  >
-                    <img
-                      src={dummyImage2}
-                      alt={`Night Lights ${year2}`}
-                      className="w-full h-full object-cover"
-                    />
+                {/* Loading State */}
+                {loading && (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500 mb-2"></div>
+                      <p className="text-gray-400 text-sm">Comparing data...</p>
+                    </div>
                   </div>
-                  
-                  {/* Year Labels */}
-                  <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-gray-600">
-                    <p className="text-white text-sm font-medium">
-                      {year1}
-                    </p>
-                  </div>
-                  <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-gray-600">
-                    <p className="text-white text-sm font-medium">
-                      {year2}
-                    </p>
-                  </div>
-                </div>
+                )}
 
-                {/* Transparency Slider */}
-                <div className="bg-gray-800/70 border border-gray-700 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <label className="text-white font-medium text-base">Blend Transparency</label>
-                    <span className="text-cyan-400 font-bold text-lg">{transparency}%</span>
+                {/* Error State */}
+                {error && (
+                  <div className="p-4 bg-red-900/30 rounded-lg border border-red-700">
+                    <p className="text-red-300 text-sm">Error: {error}</p>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-gray-400 text-sm">{year1}</span>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={transparency}
-                      onChange={(e) => setTransparency(Number(e.target.value))}
-                      className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
-                      style={{
-                        background: `linear-gradient(to right, #06b6d4 0%, #06b6d4 ${transparency}%, #374151 ${transparency}%, #374151 100%)`,
-                      }}
-                    />
-                    <span className="text-gray-400 text-sm">{year2}</span>
+                )}
+
+                {/* Image Blender - Display actual PNG images */}
+                {!loading && !error && comparisonData && comparisonData.images && (
+                  <div className="space-y-4">
+                    <div 
+                      ref={imageContainerRef}
+                      className="relative w-full aspect-video bg-gray-800 rounded-lg overflow-hidden border border-gray-700 cursor-move"
+                      onWheel={handleWheel}
+                      onMouseDown={handleMouseDown}
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                      onTouchStart={handleTouchStart}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                      style={{ touchAction: 'none' }}
+                    >
+                      <div
+                        className="absolute inset-0 w-full h-full"
+                        style={{
+                          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                          transformOrigin: 'center center',
+                          transition: isDragging ? 'none' : 'transform 0.1s ease-out',
+                        }}
+                      >
+                        {/* Base Image (Year 1) */}
+                        {comparisonData.images.year1_png ? (
+                          <img
+                            src={`${API_BASE_URL}/api/images/${comparisonData.images.year1_png}`}
+                            alt={`Night Lights ${year1}`}
+                            className="absolute inset-0 w-full h-full object-contain"
+                            draggable={false}
+                            onError={(e) => {
+                              e.target.style.display = 'none';
+                              e.target.nextElementSibling.style.display = 'flex';
+                            }}
+                          />
+                        ) : null}
+                        <div 
+                          className="absolute inset-0 w-full h-full bg-gradient-to-br from-cyan-900/50 to-gray-900 flex items-center justify-center"
+                          style={{ display: comparisonData.images.year1_png ? 'none' : 'flex' }}
+                        >
+                          <p className="text-gray-500 text-lg">{year1} Data</p>
+                        </div>
+                        
+                        {/* Overlay Image (Year 2) with transparency */}
+                        {comparisonData.images.year2_png ? (
+                          <div
+                            className="absolute inset-0 w-full h-full transition-opacity duration-150 ease-out"
+                            style={{
+                              opacity: transparency / 100,
+                            }}
+                          >
+                            <img
+                              src={`${API_BASE_URL}/api/images/${comparisonData.images.year2_png}`}
+                              alt={`Night Lights ${year2}`}
+                              className="w-full h-full object-contain"
+                              draggable={false}
+                              onError={(e) => {
+                                e.target.parentElement.style.display = 'none';
+                              }}
+                            />
+                          </div>
+                        ) : (
+                          <div
+                            className="absolute inset-0 w-full h-full transition-opacity duration-150 ease-out"
+                            style={{
+                              opacity: transparency / 100,
+                            }}
+                          >
+                            <div className="w-full h-full bg-gradient-to-br from-green-900/50 to-gray-900 flex items-center justify-center">
+                              <p className="text-gray-500 text-lg">{year2} Data</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Year Labels */}
+                      <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-gray-600 z-10">
+                        <p className="text-white text-sm font-medium">
+                          {year1}
+                        </p>
+                      </div>
+                      <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-gray-600 z-10">
+                        <p className="text-white text-sm font-medium">
+                          {year2}
+                        </p>
+                      </div>
+                      
+                      {/* Reset View Button */}
+                      {(zoom !== 1 || pan.x !== 0 || pan.y !== 0) && (
+                        <button
+                          onClick={handleResetView}
+                          className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-gray-600 text-white text-sm font-medium hover:bg-black/90 transition-colors z-10"
+                        >
+                          Reset View
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Transparency Slider - Moved here, just below image */}
+                    <div className="bg-gray-800/70 border border-gray-700 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <label className="text-white font-medium text-base">Blend Transparency</label>
+                        <span className="text-cyan-400 font-bold text-lg">{transparency}%</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-gray-400 text-sm">{year1}</span>
+                        <input
+                          type="range"
+                          min="0"
+                          max="100"
+                          value={transparency}
+                          onChange={(e) => setTransparency(Number(e.target.value))}
+                          className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                          style={{
+                            background: `linear-gradient(to right, #06b6d4 0%, #06b6d4 ${transparency}%, #374151 ${transparency}%, #374151 100%)`,
+                          }}
+                        />
+                        <span className="text-gray-400 text-sm">{year2}</span>
+                      </div>
+                      <p className="text-gray-500 text-xs mt-2 text-center">
+                        Adjust slider to blend between the two years
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-gray-500 text-xs mt-2 text-center">
-                    Adjust slider to blend between the two years
-                  </p>
-                </div>
+                )}
+
+                {/* Fallback if no images available */}
+                {!loading && !error && (!comparisonData || !comparisonData.images || (!comparisonData.images.year1_png && !comparisonData.images.year2_png)) && (
+                  <div className="relative w-full aspect-video bg-gray-800 rounded-lg overflow-hidden border border-gray-700 flex items-center justify-center">
+                    <p className="text-gray-500 text-lg">Image visualization coming soon</p>
+                  </div>
+                )}
+
+                {/* Comparison Metrics */}
+                {!loading && !error && comparisonData && (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="bg-gray-800/70 border border-gray-700 rounded-lg p-4">
+                      <p className="text-gray-400 text-xs mb-1">Economic Growth</p>
+                      <p className={`text-2xl font-bold ${-comparisonData.changes.gdp_proxy_change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {-comparisonData.changes.gdp_proxy_change >= 0 ? '+' : ''}{-comparisonData.changes.gdp_proxy_change}%
+                      </p>
+                    </div>
+                    <div className="bg-gray-800/70 border border-gray-700 rounded-lg p-4">
+                      <p className="text-gray-400 text-xs mb-1">Urban Area Change</p>
+                      <p className={`text-2xl font-bold ${-comparisonData.changes.urban_area_change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {-comparisonData.changes.urban_area_change >= 0 ? '+' : ''}{-comparisonData.changes.urban_area_change}%
+                      </p>
+                    </div>
+                    <div className="bg-gray-800/70 border border-gray-700 rounded-lg p-4">
+                      <p className="text-gray-400 text-xs mb-1">Mean Intensity</p>
+                      <p className={`text-2xl font-bold ${-comparisonData.changes.mean_intensity_change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {-comparisonData.changes.mean_intensity_change >= 0 ? '+' : ''}{-comparisonData.changes.mean_intensity_change}%
+                      </p>
+                    </div>
+                    <div className="bg-gray-800/70 border border-gray-700 rounded-lg p-4">
+                      <p className="text-gray-400 text-xs mb-1">Fastest Sector</p>
+                      <p className="text-2xl font-bold text-purple-400 capitalize">
+                        {comparisonData.insights.fastest_growing_sector}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Side-by-Side Comparison Chart */}
+                {!loading && !error && comparisonData && (
+                  <div className="bg-gray-800/70 border border-gray-700 rounded-lg p-4">
+                    <h3 className="text-white font-semibold mb-4">GDP Proxy Comparison (Sum of Lights)</h3>
+                    <div className="w-full h-64 bg-gradient-to-b from-cyan-500/10 to-gray-800 rounded-lg relative overflow-hidden">
+                      <svg viewBox="0 0 400 200" className="w-full h-full">
+                        {/* Year 1 bar */}
+                        <rect
+                          x="50"
+                          y={200 - (comparisonData.year1.gdp_proxy_sol / Math.max(comparisonData.year1.gdp_proxy_sol, comparisonData.year2.gdp_proxy_sol)) * 180}
+                          width="120"
+                          height={(comparisonData.year1.gdp_proxy_sol / Math.max(comparisonData.year1.gdp_proxy_sol, comparisonData.year2.gdp_proxy_sol)) * 180}
+                          fill="#06b6d4"
+                          opacity="0.8"
+                        />
+                        {/* Year 2 bar */}
+                        <rect
+                          x="230"
+                          y={200 - (comparisonData.year2.gdp_proxy_sol / Math.max(comparisonData.year1.gdp_proxy_sol, comparisonData.year2.gdp_proxy_sol)) * 180}
+                          width="120"
+                          height={(comparisonData.year2.gdp_proxy_sol / Math.max(comparisonData.year1.gdp_proxy_sol, comparisonData.year2.gdp_proxy_sol)) * 180}
+                          fill="#10b981"
+                          opacity="0.8"
+                        />
+                        {/* Labels */}
+                        <text x="110" y="195" textAnchor="middle" fill="#06b6d4" fontSize="14" fontWeight="bold">
+                          {year1}
+                        </text>
+                        <text x="290" y="195" textAnchor="middle" fill="#10b981" fontSize="14" fontWeight="bold">
+                          {year2}
+                        </text>
+                        {/* Values */}
+                        <text x="110" y="15" textAnchor="middle" fill="#fff" fontSize="12">
+                          {(comparisonData.year1.gdp_proxy_sol / 1000000).toFixed(1)}M
+                        </text>
+                        <text x="290" y="15" textAnchor="middle" fill="#fff" fontSize="12">
+                          {(comparisonData.year2.gdp_proxy_sol / 1000000).toFixed(1)}M
+                        </text>
+                      </svg>
+                    </div>
+                  </div>
+                )}
+
+                {/* Sector Breakdown Comparison */}
+                {!loading && !error && comparisonData && (
+                  <div className="bg-gray-800/70 border border-gray-700 rounded-lg p-4">
+                    <h3 className="text-white font-semibold mb-4">Sector Breakdown Comparison</h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-gray-400 text-sm mb-2">{year1}</p>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-amber-500 text-xs">Rural</span>
+                            <span className="text-white text-sm">{comparisonData.year1.sector_breakdown.rural.toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-blue-500 text-xs">Urban</span>
+                            <span className="text-white text-sm">{comparisonData.year1.sector_breakdown.urban.toLocaleString()}</span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-purple-500 text-xs">Industrial</span>
+                            <span className="text-white text-sm">{comparisonData.year1.sector_breakdown.industrial.toLocaleString()}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <p className="text-gray-400 text-sm mb-2">{year2}</p>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-amber-500 text-xs">Rural</span>
+                            <span className="text-white text-sm">{comparisonData.year2.sector_breakdown.rural.toLocaleString()}</span>
+                            <span className={`text-xs ${-comparisonData.changes.sector_changes.rural >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              ({-comparisonData.changes.sector_changes.rural >= 0 ? '+' : ''}{-comparisonData.changes.sector_changes.rural}%)
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-blue-500 text-xs">Urban</span>
+                            <span className="text-white text-sm">{comparisonData.year2.sector_breakdown.urban.toLocaleString()}</span>
+                            <span className={`text-xs ${-comparisonData.changes.sector_changes.urban >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              ({-comparisonData.changes.sector_changes.urban >= 0 ? '+' : ''}{-comparisonData.changes.sector_changes.urban}%)
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-purple-500 text-xs">Industrial</span>
+                            <span className="text-white text-sm">{comparisonData.year2.sector_breakdown.industrial.toLocaleString()}</span>
+                            <span className={`text-xs ${-comparisonData.changes.sector_changes.industrial >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              ({-comparisonData.changes.sector_changes.industrial >= 0 ? '+' : ''}{-comparisonData.changes.sector_changes.industrial}%)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Detailed Comparison Table */}
+                {!loading && !error && comparisonData && (
+                  <div className="bg-gray-800/70 border border-gray-700 rounded-lg p-4">
+                    <h3 className="text-white font-semibold mb-4">Detailed Metrics Comparison</h3>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-700">
+                            <th className="text-left text-gray-400 py-2">Metric</th>
+                            <th className="text-right text-gray-400 py-2">{year1}</th>
+                            <th className="text-right text-gray-400 py-2">{year2}</th>
+                            <th className="text-right text-gray-400 py-2">Change</th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-white">
+                          <tr className="border-b border-gray-700/50">
+                            <td className="py-2">GDP Proxy (Sum of Lights)</td>
+                            <td className="text-right py-2">{(comparisonData.year1.gdp_proxy_sol / 1000000).toFixed(2)}M</td>
+                            <td className="text-right py-2">{(comparisonData.year2.gdp_proxy_sol / 1000000).toFixed(2)}M</td>
+                            <td className={`text-right py-2 ${-comparisonData.changes.gdp_proxy_change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {-comparisonData.changes.gdp_proxy_change >= 0 ? '+' : ''}{-comparisonData.changes.gdp_proxy_change}%
+                            </td>
+                          </tr>
+                          <tr className="border-b border-gray-700/50">
+                            <td className="py-2">Urban Area (km²)</td>
+                            <td className="text-right py-2">{comparisonData.year1.urban_area_sqkm.toLocaleString()}</td>
+                            <td className="text-right py-2">{comparisonData.year2.urban_area_sqkm.toLocaleString()}</td>
+                            <td className={`text-right py-2 ${-comparisonData.changes.urban_area_change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {-comparisonData.changes.urban_area_change >= 0 ? '+' : ''}{-comparisonData.changes.urban_area_change}%
+                            </td>
+                          </tr>
+                          <tr className="border-b border-gray-700/50">
+                            <td className="py-2">Mean Intensity (nW)</td>
+                            <td className="text-right py-2">{comparisonData.year1.mean_intensity.toFixed(2)}</td>
+                            <td className="text-right py-2">{comparisonData.year2.mean_intensity.toFixed(2)}</td>
+                            <td className={`text-right py-2 ${-comparisonData.changes.mean_intensity_change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {-comparisonData.changes.mean_intensity_change >= 0 ? '+' : ''}{-comparisonData.changes.mean_intensity_change}%
+                            </td>
+                          </tr>
+                          <tr className="border-b border-gray-700/50">
+                            <td className="py-2">Max Intensity (nW)</td>
+                            <td className="text-right py-2">{comparisonData.year1.max_intensity.toFixed(2)}</td>
+                            <td className="text-right py-2">{comparisonData.year2.max_intensity.toFixed(2)}</td>
+                            <td className={`text-right py-2 ${-comparisonData.changes.max_intensity_change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {-comparisonData.changes.max_intensity_change >= 0 ? '+' : ''}{-comparisonData.changes.max_intensity_change}%
+                            </td>
+                          </tr>
+                          <tr className="border-b border-gray-700/50">
+                            <td className="py-2">Lit Pixels</td>
+                            <td className="text-right py-2">{comparisonData.year1.lit_pixels.toLocaleString()}</td>
+                            <td className="text-right py-2">{comparisonData.year2.lit_pixels.toLocaleString()}</td>
+                            <td className={`text-right py-2 ${-comparisonData.changes.lit_pixels_change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              {-comparisonData.changes.lit_pixels_change >= 0 ? '+' : ''}{-comparisonData.changes.lit_pixels_change}%
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Insights */}
+                {!loading && !error && comparisonData && (
+                  <div className="space-y-3">
+                    <div className="p-4 bg-gray-800/60 rounded-lg border border-gray-700">
+                      <p className="text-gray-200 text-sm">
+                        <span className="text-cyan-400 font-semibold">Overall Trend:</span> {(-comparisonData.insights.economic_growth_rate > 0) ? 'Growth' : 'Decline'} - 
+                        Economic activity {(-comparisonData.insights.economic_growth_rate > 0) ? 'increased' : 'decreased'} by {Math.abs(-comparisonData.insights.economic_growth_rate)}% 
+                        from {year1} to {year2}.
+                      </p>
+                    </div>
+                    <div className="p-4 bg-gray-800/60 rounded-lg border border-gray-700">
+                      <p className="text-gray-200 text-sm">
+                        <span className="text-green-400 font-semibold">Fastest Growing Sector:</span> {comparisonData.insights.fastest_growing_sector} sector 
+                        grew by {Math.abs(-comparisonData.insights.fastest_sector_growth)}%, indicating significant development in this area.
+                      </p>
+                    </div>
+                    <div className="p-4 bg-gray-800/60 rounded-lg border border-gray-700">
+                      <p className="text-gray-200 text-sm">
+                        <span className="text-yellow-400 font-semibold">Urbanization:</span> Urban area {(-comparisonData.insights.urbanization_rate >= 0) ? 'expanded' : 'contracted'} by 
+                        {Math.abs(-comparisonData.insights.urbanization_rate)}%, representing {Math.abs(-comparisonData.absolute_changes.urban_area_diff).toFixed(0)} km² of change.
+                      </p>
+                    </div>
+                    {comparisonData.difference_stats && (
+                      <div className="p-4 bg-gray-800/60 rounded-lg border border-gray-700">
+                        <p className="text-gray-200 text-sm">
+                          <span className="text-purple-400 font-semibold">Spatial Changes:</span> {comparisonData.difference_stats.brightened_pixels.toLocaleString()} pixels brightened, 
+                          {comparisonData.difference_stats.darkened_pixels.toLocaleString()} pixels darkened, indicating {comparisonData.difference_stats.brightened_pixels > comparisonData.difference_stats.darkened_pixels ? 'net growth' : 'net decline'} in lighting activity.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Generate Heatmap Button */}
                 {!showHeatmap && (
@@ -263,6 +674,10 @@ const Compare = () => {
       </div>
 
       <style jsx>{`
+        .slider {
+          transition: background 0.1s ease;
+        }
+
         .slider::-webkit-slider-thumb {
           appearance: none;
           width: 18px;
@@ -272,6 +687,16 @@ const Compare = () => {
           cursor: pointer;
           border: 2px solid #fff;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+          transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        .slider::-webkit-slider-thumb:hover {
+          transform: scale(1.1);
+          box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+        }
+
+        .slider::-webkit-slider-thumb:active {
+          transform: scale(1.05);
         }
 
         .slider::-moz-range-thumb {
@@ -282,6 +707,16 @@ const Compare = () => {
           cursor: pointer;
           border: 2px solid #fff;
           box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+          transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+
+        .slider::-moz-range-thumb:hover {
+          transform: scale(1.1);
+          box-shadow: 0 3px 6px rgba(0, 0, 0, 0.4);
+        }
+
+        .slider::-moz-range-thumb:active {
+          transform: scale(1.05);
         }
       `}</style>
     </div>
