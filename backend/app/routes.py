@@ -3,6 +3,9 @@ from flask import Blueprint, request, jsonify, session
 from app.main import app
 from app.auth import generate_otp, send_otp_email, store_otp, verify_otp, cleanup_expired_otps
 from app.tif_extractor import extract_tif_to_json, get_available_years, get_tif_file_path
+from app.insights_service import get_insights
+from app.anomaly_service import detect_anomalies
+from app.growth_analysis_service import analyze_growth
 import re
 import os
 
@@ -11,6 +14,12 @@ auth_bp = Blueprint('auth', __name__)
 
 # Create blueprint for data routes
 data_bp = Blueprint('data', __name__)
+
+# Create blueprint for insights routes
+insights_bp = Blueprint('insights', __name__)
+
+# Create blueprint for analysis routes
+analysis_bp = Blueprint('analysis', __name__)
 
 # Path to raw data directory
 RAW_DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'raw', 'NightLights_Bright_Tamil Nadu')
@@ -208,6 +217,157 @@ def get_available_years_route():
         }), 500
 
 
+@insights_bp.route('/api/insights', methods=['GET'])
+def get_insights_route():
+    """Get insights for a region and year"""
+    try:
+        region = request.args.get('region', '').strip()
+        year = request.args.get('year', type=int)
+        max_results = request.args.get('max_results', type=int, default=5)
+        
+        # Validate inputs
+        if not region:
+            return jsonify({
+                'success': False,
+                'message': 'Region parameter is required'
+            }), 400
+        
+        if not year:
+            return jsonify({
+                'success': False,
+                'message': 'Year parameter is required'
+            }), 400
+        
+        # Validate max_results
+        if max_results < 1 or max_results > 10:
+            max_results = 5
+        
+        # Get insights
+        result = get_insights(region, year, max_results)
+        
+        if result['success']:
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'An error occurred: {str(e)}'
+        }), 500
+
+
+@analysis_bp.route('/api/analysis/anomalies', methods=['GET'])
+def get_anomalies_route():
+    """Detect anomalies for a region using cleaned data"""
+    try:
+        region = request.args.get('region', '').strip()
+        
+        # Validate inputs
+        if not region:
+            return jsonify({
+                'success': False,
+                'message': 'Region parameter is required'
+            }), 400
+        
+        # Detect anomalies (uses last available year automatically)
+        result = detect_anomalies(region)
+        
+        if result['success']:
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'An error occurred: {str(e)}'
+        }), 500
+
+
+@analysis_bp.route('/api/analysis/available-regions', methods=['GET'])
+def get_available_regions_route():
+    """Get list of available regions with cleaned data"""
+    try:
+        from app.growth_analysis_service import BASE_CLEAN_DIR
+        import os
+        
+        regions = []
+        if os.path.exists(BASE_CLEAN_DIR):
+            for folder_name in os.listdir(BASE_CLEAN_DIR):
+                folder_path = os.path.join(BASE_CLEAN_DIR, folder_name)
+                if os.path.isdir(folder_path) and 'nightlights_bright' in folder_name.lower() and 'cleaned' in folder_name.lower():
+                    # Extract region name from folder name
+                    # Format: NightLights_Bright_RegionName_cleaned
+                    parts = folder_name.replace('NightLights_Bright_', '').replace('_cleaned', '').split('_')
+                    region_name = ' '.join(parts)
+                    regions.append({
+                        'name': region_name,
+                        'folder': folder_name
+                    })
+        
+        return jsonify({
+            'success': True,
+            'regions': regions
+        }), 200
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'message': f'An error occurred: {str(e)}'
+        }), 500
+
+
+@analysis_bp.route('/api/analysis/growth', methods=['GET'])
+def get_growth_analysis_route():
+    """Analyze growth for a region within a year range"""
+    try:
+        region = request.args.get('region', '').strip()
+        start_year = request.args.get('start_year', type=int)
+        end_year = request.args.get('end_year', type=int)
+        
+        # Validate inputs
+        if not region:
+            return jsonify({
+                'success': False,
+                'message': 'Region parameter is required'
+            }), 400
+        
+        if not start_year or not end_year:
+            return jsonify({
+                'success': False,
+                'message': 'start_year and end_year parameters are required'
+            }), 400
+        
+        if start_year > end_year:
+            return jsonify({
+                'success': False,
+                'message': 'start_year must be less than or equal to end_year'
+            }), 400
+        
+        # Analyze growth
+        result = analyze_growth(region, start_year, end_year)
+        
+        if result.get('success'):
+            return jsonify(result), 200
+        else:
+            # Return 400 for expected errors (like no data found)
+            return jsonify(result), 400
+            
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error in growth analysis: {str(e)}")
+        print(f"Traceback: {error_trace}")
+        return jsonify({
+            'success': False,
+            'message': f'An error occurred: {str(e)}',
+            'error_type': type(e).__name__
+        }), 500
+
+
 # Register blueprints
 app.register_blueprint(auth_bp)
 app.register_blueprint(data_bp)
+app.register_blueprint(insights_bp)
+app.register_blueprint(analysis_bp)
