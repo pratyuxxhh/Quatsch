@@ -14,13 +14,14 @@ const HeroSectionAnimationWrapper = () => {
     },
   };
 
+  // Slide content in from left to right with fade
   const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, x: -40 },
     visible: {
       opacity: 1,
-      y: 0,
+      x: 0,
       transition: {
-        duration: 0.6,
+        duration: 0.7,
         ease: 'easeOut',
       },
     },
