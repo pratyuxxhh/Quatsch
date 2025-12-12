@@ -27,7 +27,7 @@ const Navbar = () => {
           {/* Left side - Logo/Title */}
           <div className="flex-shrink-0">
             <Link to="/">
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent cursor-pointer">
+              <h1 className="text-2xl font-display font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent cursor-pointer">
                 Quatsch
               </h1>
             </Link>

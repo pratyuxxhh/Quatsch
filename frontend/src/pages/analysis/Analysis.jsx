@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
+import ParticlesBackground from "../../components/ParticlesBackground";
 
 const years = Array.from({ length: 10 }, (_, i) => 2016 + i);
 
@@ -119,8 +120,9 @@ const Analysis = () => {
   const showAnomaly = showResults && anomalyDetection;
 
   return (
-    <div className="min-h-screen w-full bg-black pt-20 flex justify-center px-4 pb-10">
-      <div className="w-full max-w-5xl">
+    <div className="relative min-h-screen w-full bg-black pt-20 flex justify-center px-4 pb-10">
+      <ParticlesBackground />
+      <div className="relative z-10 w-full max-w-5xl">
         <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">Analysis</h1>
         <p className="text-gray-300 mb-6 text-sm sm:text-base">
           Select a region, set a year range (2016–2025), choose analysis types, and click Analyze.

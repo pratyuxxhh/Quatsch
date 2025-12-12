@@ -2,12 +2,16 @@ import React, { Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
 import HeroSection from '../components/HeroSection';
 import EarthGlobe from '../components/EarthGlobe';
+import ParticlesBackground from '../components/ParticlesBackground';
 
 const Home = () => {
   const earthTextureUrl = '/brighter25.png';
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
+      {/* Particles Background - Behind everything */}
+      <ParticlesBackground />
+      
       {/* 3D Canvas - Full screen, positioned behind UI */}
       <div className="absolute inset-0 z-0 bg-transparent pointer-events-none">
         <Canvas
