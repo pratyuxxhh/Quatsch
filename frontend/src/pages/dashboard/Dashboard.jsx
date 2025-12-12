@@ -209,6 +209,8 @@ const Dashboard = () => {
   const [nightlightsData, setNightlightsData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [insightsLoading, setInsightsLoading] = useState(false);
+  const [insightsError, setInsightsError] = useState(null);
 
   const API_BASE_URL = 'http://localhost:5000';
 
@@ -250,11 +252,50 @@ const Dashboard = () => {
     fetchNightlightsData();
   }, [selectedYear]);
 
+  // Fetch insights from API when region or year changes
   useEffect(() => {
-    if (selectedRegion) {
-      const insightsData = getInsights(selectedRegion, selectedYear);
-      setInsights(insightsData);
-    }
+    const fetchInsights = async () => {
+      if (!selectedRegion) {
+        setInsights([]);
+        return;
+      }
+
+      setInsightsLoading(true);
+      setInsightsError(null);
+      
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/api/insights?region=${encodeURIComponent(selectedRegion)}&year=${selectedYear}&max_results=5`,
+          {
+            credentials: 'include',
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch insights: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.success && result.insights) {
+          setInsights(result.insights);
+        } else {
+          // Fallback to local insights if API fails
+          const fallbackInsights = getInsights(selectedRegion, selectedYear);
+          setInsights(fallbackInsights);
+        }
+      } catch (err) {
+        console.error('Error fetching insights:', err);
+        setInsightsError(err.message);
+        // Fallback to local insights on error
+        const fallbackInsights = getInsights(selectedRegion, selectedYear);
+        setInsights(fallbackInsights);
+      } finally {
+        setInsightsLoading(false);
+      }
+    };
+
+    fetchInsights();
   }, [selectedRegion, selectedYear]);
 
   const handleSearch = (e) => {
@@ -418,19 +459,77 @@ const Dashboard = () => {
                     <p className="text-gray-400 text-sm">{selectedYear}</p>
                   </div>
 
-                  <div className="space-y-4">
-                    {insights.map((insight, index) => (
-                      <div
-                        key={index}
-                        className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-cyan-500/50 transition-colors"
-                      >
-                        <div className="flex items-start">
-                          <div className="flex-shrink-0 w-2 h-2 bg-cyan-400 rounded-full mt-2 mr-3"></div>
-                          <p className="text-gray-300 text-sm leading-relaxed">{insight}</p>
+                  {insightsLoading ? (
+                    <div className="space-y-4">
+                      {[1, 2, 3].map((i) => (
+                        <div
+                          key={i}
+                          className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 animate-pulse"
+                        >
+                          <div className="flex items-start">
+                            <div className="flex-shrink-0 w-2 h-2 bg-gray-600 rounded-full mt-2 mr-3"></div>
+                            <div className="flex-1 space-y-2">
+                              <div className="h-4 bg-gray-700 rounded w-3/4"></div>
+                              <div className="h-4 bg-gray-700 rounded w-1/2"></div>
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : insightsError ? (
+                    <div className="p-4 bg-red-900/30 rounded-lg border border-red-700">
+                      <p className="text-red-300 text-sm">
+                        Error loading insights: {insightsError}
+                      </p>
+                      <p className="text-gray-400 text-xs mt-2">
+                        Showing fallback insights
+                      </p>
+                    </div>
+                  ) : insights.length > 0 ? (
+                    <div className="space-y-4">
+                      {insights.map((insight, index) => {
+                        // Handle both string and object formats
+                        const insightText = typeof insight === 'string' ? insight : insight.text || insight;
+                        const insightSource = typeof insight === 'object' ? insight.source : null;
+                        const insightUrl = typeof insight === 'object' ? insight.url : null;
+                        
+                        return (
+                          <div
+                            key={index}
+                            className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-cyan-500/50 transition-colors"
+                          >
+                            <div className="flex items-start">
+                              <div className="flex-shrink-0 w-2 h-2 bg-cyan-400 rounded-full mt-2 mr-3"></div>
+                              <div className="flex-1">
+                                <p className="text-gray-300 text-sm leading-relaxed">{insightText}</p>
+                                {insightSource && (
+                                  <p className="text-gray-500 text-xs mt-2">
+                                    Source: {insightSource}
+                                  </p>
+                                )}
+                                {insightUrl && (
+                                  <a
+                                    href={insightUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-cyan-400 text-xs mt-1 hover:underline inline-block"
+                                  >
+                                    Read more →
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-gray-400 text-sm">
+                        No insights available for this region and year.
+                      </p>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-12">
@@ -448,7 +547,7 @@ const Dashboard = () => {
                     />
                   </svg>
                   <p className="text-gray-400 text-sm">
-                    Search for a region to view insights and top news for the selected year.
+                    Search for a region to view insights and events for the selected year.
                   </p>
                 </div>
               )}
