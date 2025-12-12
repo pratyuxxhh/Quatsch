@@ -1,0 +1,77 @@
+{
+  "target_year": "2024",
+  "baseline_years": 9,
+  "detection_method": "Dark Zone Emergence (Absolute Threshold)",
+  "parameters": {
+    "min_new_intensity": "15.0 nW",
+    "max_baseline_intensity": "5.0 nW",
+    "min_cluster_size": 3
+  },
+  "results": {
+    "total_anomalies": 6,
+    "total_anomalous_pixels": 58,
+    "overall_lighting_growth": "12.87%"
+  },
+  "anomalies": [
+    {
+      "id": 4,
+      "lat": 8.686203871436641,
+      "lon": 78.34665309479347,
+      "pixel_count": 33,
+      "current_intensity": 27.515151977539062,
+      "baseline_intensity": 1.6363636255264282,
+      "intensity_gain": 25.878787994384766,
+      "max_brightness": 53.0
+    },
+    {
+      "id": 1,
+      "lat": 10.267238771487,
+      "lon": 77.38545574078559,
+      "pixel_count": 5,
+      "current_intensity": 20.200000762939453,
+      "baseline_intensity": 0.6000000238418579,
+      "intensity_gain": 19.600000381469727,
+      "max_brightness": 22.0
+    },
+    {
+      "id": 2,
+      "lat": 9.481212897882418,
+      "lon": 78.94403275873296,
+      "pixel_count": 3,
+      "current_intensity": 22.0,
+      "baseline_intensity": 3.0,
+      "intensity_gain": 19.0,
+      "max_brightness": 25.0
+    },
+    {
+      "id": 3,
+      "lat": 9.094937325711022,
+      "lon": 79.7974322786465,
+      "pixel_count": 4,
+      "current_intensity": 20.75,
+      "baseline_intensity": 3.75,
+      "intensity_gain": 17.0,
+      "max_brightness": 22.0
+    },
+    {
+      "id": 5,
+      "lat": 8.681712295016045,
+      "lon": 78.32419521269048,
+      "pixel_count": 5,
+      "current_intensity": 18.0,
+      "baseline_intensity": 1.0,
+      "intensity_gain": 17.0,
+      "max_brightness": 18.0
+    },
+    {
+      "id": 6,
+      "lat": 8.605355495865885,
+      "lon": 77.20579268396168,
+      "pixel_count": 8,
+      "current_intensity": 17.75,
+      "baseline_intensity": 3.5,
+      "intensity_gain": 14.25,
+      "max_brightness": 21.0
+    }
+  ]
+}

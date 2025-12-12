@@ -41,8 +41,12 @@
 
 
     "framer-motion": "^12.23.26",
+<<<<<<< HEAD
 
 
+=======
+    "leaflet": "^1.9.4",
+>>>>>>> 87cf92b744ee7b79fcbb8fd0915640119a3bb75c
     "ogl": "^1.0.11",
 
 
@@ -50,8 +54,12 @@
 
 
     "react-dom": "^19.2.0",
+<<<<<<< HEAD
 
 
+=======
+    "react-leaflet": "^5.0.0",
+>>>>>>> 87cf92b744ee7b79fcbb8fd0915640119a3bb75c
     "react-router-dom": "^7.10.1",
 
 
@@ -95,11 +103,15 @@
 
 
     "tailwindcss": "^3.4.18",
+<<<<<<< HEAD
 
 
     "vite": "^7.2.4"
 
 
+=======
+    "vite": "^7.2.7"
+>>>>>>> 87cf92b744ee7b79fcbb8fd0915640119a3bb75c
   }
 
 
