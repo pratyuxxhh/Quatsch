@@ -6,6 +6,7 @@ from app.tif_extractor import extract_tif_to_json, get_available_years, get_tif_
 from app.insights_service import get_insights
 from app.anomaly_service import detect_anomalies
 from app.growth_analysis_service import analyze_growth
+from app.comparison_service import compare_years
 import re
 import os
 
@@ -358,6 +359,53 @@ def get_growth_analysis_route():
         import traceback
         error_trace = traceback.format_exc()
         print(f"Error in growth analysis: {str(e)}")
+        print(f"Traceback: {error_trace}")
+        return jsonify({
+            'success': False,
+            'message': f'An error occurred: {str(e)}',
+            'error_type': type(e).__name__
+        }), 500
+
+
+@analysis_bp.route('/api/compare', methods=['GET'])
+def compare_years_route():
+    """Compare two specific years of nightlights data"""
+    try:
+        region = request.args.get('region', '').strip()
+        year1 = request.args.get('year1', type=int)
+        year2 = request.args.get('year2', type=int)
+        
+        # Validate inputs
+        if not region:
+            return jsonify({
+                'success': False,
+                'message': 'Region parameter is required'
+            }), 400
+        
+        if not year1 or not year2:
+            return jsonify({
+                'success': False,
+                'message': 'year1 and year2 parameters are required'
+            }), 400
+        
+        if year1 == year2:
+            return jsonify({
+                'success': False,
+                'message': 'year1 and year2 must be different'
+            }), 400
+        
+        # Compare years
+        result = compare_years(region, year1, year2)
+        
+        if result.get('success'):
+            return jsonify(result), 200
+        else:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        import traceback
+        error_trace = traceback.format_exc()
+        print(f"Error in comparison: {str(e)}")
         print(f"Traceback: {error_trace}")
         return jsonify({
             'success': False,

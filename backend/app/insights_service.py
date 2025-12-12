@@ -236,3 +236,4 @@ def get_insights(region: str, year: int, max_results: int = 5) -> Dict:
     }
 
 
+

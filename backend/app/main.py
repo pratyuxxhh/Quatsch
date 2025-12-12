@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 from flask_session import Session
 import os
@@ -50,6 +50,40 @@ os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
 
 # Initialize session
 Session(app)
+
+# Serve static images from data directory
+@app.route('/api/images/<path:filepath>')
+def serve_image(filepath):
+    """Serve PNG images from the data directory"""
+    try:
+        # Get the backend directory
+        backend_dir = os.path.dirname(os.path.dirname(__file__))
+        data_dir = os.path.join(backend_dir, 'data')
+        
+        # Security: Only allow PNG files
+        if not filepath.endswith('.png'):
+            return jsonify({'error': 'Invalid file type'}), 400
+        
+        # Construct full path
+        full_path = os.path.join(data_dir, filepath)
+        
+        # Security: Ensure file is within data directory (prevent path traversal)
+        data_dir_abs = os.path.abspath(data_dir)
+        full_path_abs = os.path.abspath(full_path)
+        
+        if not full_path_abs.startswith(data_dir_abs):
+            return jsonify({'error': 'Access denied'}), 403
+        
+        if os.path.exists(full_path):
+            # Get directory and filename
+            directory = os.path.dirname(full_path)
+            filename = os.path.basename(full_path)
+            return send_from_directory(directory, filename)
+        else:
+            return jsonify({'error': 'File not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 # Import routes after app initialization
 from app.routes import *

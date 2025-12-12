@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import ParticlesBackground from '../../components/ParticlesBackground';
 
 const About = () => {
+  const API_BASE_URL = 'http://localhost:5000';
+  
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -252,16 +254,13 @@ const About = () => {
                 We employ advanced algorithms to filter noise, validate sources, and transform raw satellite 
                 data into actionable insights.
               </p>
-              <div className="bg-gray-800/50 rounded-lg p-8 border border-gray-700 min-h-[400px] flex items-center justify-center">
-                <div className="text-center">
-                  <div className="text-6xl mb-4">🖼️</div>
-                  <p className="text-gray-400 text-lg">
-                    Data Cleaning Visualization
-                  </p>
-                  <p className="text-gray-500 text-sm mt-2">
-                    (Image will be added here)
-                  </p>
-                </div>
+              <div className="bg-gray-800/50 rounded-lg p-8 border border-gray-700 flex items-center justify-center">
+                <img
+                  src={`${API_BASE_URL}/api/images/cleaned/diagnostics/VIIRS_RAD_Tamil Nadu_2025_01_diagnostic.png`}
+                  alt="Data Cleaning Diagnostic Visualization"
+                  className="max-w-full h-auto object-contain"
+                  style={{ maxHeight: '600px' }}
+                />
               </div>
             </div>
           </motion.section>
