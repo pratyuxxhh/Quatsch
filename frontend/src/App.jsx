@@ -1,35 +1,42 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React, { Suspense } from 'react';
+import { Canvas } from '@react-three/fiber';
+import Navbar from './components/Navbar';
+import HeroSection from './components/HeroSection';
+import EarthGlobe from './components/EarthGlobe';
+import './App.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  // Earth texture URL - using a high-quality equirectangular Earth texture
+  // This is a reliable public Earth texture URL
+  //const earthTextureUrl = 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg';
+  const earthTextureUrl = '/brighter25.png';
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <div className="relative w-full h-screen overflow-hidden">
+      {/* Navbar */}
+      <Navbar />
+
+      {/* 3D Canvas - Full screen, positioned behind UI */}
+      <div className="absolute inset-0 z-0 bg-transparent pointer-events-none">
+        <Canvas
+          camera={{ position: [0, 0, 6.1], fov: 50 }}
+          gl={{ antialias: true }}
+        >
+          <ambientLight intensity={1.9} />
+          <directionalLight position={[5, 15, 5]} intensity={1.5} />
+          <pointLight position={[-5, -5, -5]} intensity={1.5} />
+          <Suspense fallback={null}>
+            <EarthGlobe earthTextureUrl={earthTextureUrl} />
+          </Suspense>
+        </Canvas>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+
+      {/* Hero Section with 2D UI overlay */}
+      <div className="relative z-20">
+        <HeroSection />
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </div>
+  );
 }
 
-export default App
+export default App;
