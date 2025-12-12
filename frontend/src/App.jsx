@@ -1,41 +1,30 @@
-import React, { Suspense } from 'react';
-import { Canvas } from '@react-three/fiber';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
-import HeroSection from './components/HeroSection';
-import EarthGlobe from './components/EarthGlobe';
+import Home from './pages/Home';
+import Dashboard from './pages/dashboard/Dashboard';
+import Analysis from './pages/analysis/Analysis';
+import Compare from './pages/compare/Compare';
+import About from './pages/about/About';
 import './App.css';
 
 function App() {
-  // Earth texture URL - using a high-quality equirectangular Earth texture
-  // This is a reliable public Earth texture URL
-  //const earthTextureUrl = 'https://threejs.org/examples/textures/planets/earth_atmos_2048.jpg';
-  const earthTextureUrl = '/brighter25.png';
-
   return (
-    <div className="relative w-full h-screen overflow-hidden">
-      {/* Navbar */}
-      <Navbar />
+    <Router>
+      <div className="relative w-full min-h-screen overflow-hidden">
+        {/* Navbar */}
+        <Navbar />
 
-      {/* 3D Canvas - Full screen, positioned behind UI */}
-      <div className="absolute inset-0 z-0 bg-transparent pointer-events-none">
-        <Canvas
-          camera={{ position: [0, 0, 6.1], fov: 50 }}
-          gl={{ antialias: true }}
-        >
-          <ambientLight intensity={1.9} />
-          <directionalLight position={[5, 15, 5]} intensity={1.5} />
-          <pointLight position={[-5, -5, -5]} intensity={1.5} />
-          <Suspense fallback={null}>
-            <EarthGlobe earthTextureUrl={earthTextureUrl} />
-          </Suspense>
-        </Canvas>
+        {/* Routes */}
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/analysis" element={<Analysis />} />
+          <Route path="/compare" element={<Compare />} />
+          <Route path="/about" element={<About />} />
+        </Routes>
       </div>
-
-      {/* Hero Section with 2D UI overlay */}
-      <div className="relative z-20">
-        <HeroSection />
-      </div>
-    </div>
+    </Router>
   );
 }
 

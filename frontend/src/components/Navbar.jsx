@@ -1,11 +1,15 @@
 import React, { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
 const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
+
+  const isActive = (path) => location.pathname === path;
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 w-full bg-transparent backdrop-blur-sm">
@@ -13,38 +17,48 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Left side - Logo/Title */}
           <div className="flex-shrink-0">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent">
-              Quatsch
-            </h1>
+            <Link to="/">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent cursor-pointer">
+                Quatsch
+              </h1>
+            </Link>
           </div>
 
           {/* Right side - Desktop Navigation */}
           <div className="hidden md:block">
             <div className="ml-10 flex items-baseline space-x-8">
-              <a
-                href="#home"
-                className="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+              <Link
+                to="/dashboard"
+                className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+                  isActive('/dashboard') ? 'text-white' : 'text-gray-300 hover:text-white'
+                }`}
               >
-                Home
-              </a>
-              <a
-                href="#courses"
-                className="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+                Dashboard
+              </Link>
+              <Link
+                to="/analysis"
+                className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+                  isActive('/analysis') ? 'text-white' : 'text-gray-300 hover:text-white'
+                }`}
               >
-                Courses
-              </a>
-              <a
-                href="#discover"
-                className="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+                Analysis
+              </Link>
+              <Link
+                to="/compare"
+                className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+                  isActive('/compare') ? 'text-white' : 'text-gray-300 hover:text-white'
+                }`}
               >
-                Discover
-              </a>
-              <a
-                href="#contact"
-                className="text-gray-300 hover:text-white px-3 py-2 text-sm font-medium transition-colors duration-200"
+                Compare
+              </Link>
+              <Link
+                to="/about"
+                className={`px-3 py-2 text-sm font-medium transition-colors duration-200 ${
+                  isActive('/about') ? 'text-white' : 'text-gray-300 hover:text-white'
+                }`}
               >
-                Contact
-              </a>
+                About
+              </Link>
             </div>
           </div>
 
@@ -98,34 +112,51 @@ const Navbar = () => {
       {isMenuOpen && (
         <div className="md:hidden">
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-900 bg-opacity-95 backdrop-blur-sm">
-            <a
-              href="#home"
-              className="text-gray-300 hover:text-white block px-3 py-2 text-base font-medium transition-colors duration-200"
+            <Link
+              to="/"
+              className={`block px-3 py-2 text-base font-medium transition-colors duration-200 ${
+                isActive('/') ? 'text-white' : 'text-gray-300 hover:text-white'
+              }`}
               onClick={() => setIsMenuOpen(false)}
             >
               Home
-            </a>
-            <a
-              href="#courses"
-              className="text-gray-300 hover:text-white block px-3 py-2 text-base font-medium transition-colors duration-200"
+            </Link>
+            <Link
+              to="/dashboard"
+              className={`block px-3 py-2 text-base font-medium transition-colors duration-200 ${
+                isActive('/dashboard') ? 'text-white' : 'text-gray-300 hover:text-white'
+              }`}
               onClick={() => setIsMenuOpen(false)}
             >
-              Courses
-            </a>
-            <a
-              href="#discover"
-              className="text-gray-300 hover:text-white block px-3 py-2 text-base font-medium transition-colors duration-200"
+              Dashboard
+            </Link>
+            <Link
+              to="/analysis"
+              className={`block px-3 py-2 text-base font-medium transition-colors duration-200 ${
+                isActive('/analysis') ? 'text-white' : 'text-gray-300 hover:text-white'
+              }`}
               onClick={() => setIsMenuOpen(false)}
             >
-              Discover
-            </a>
-            <a
-              href="#contact"
-              className="text-gray-300 hover:text-white block px-3 py-2 text-base font-medium transition-colors duration-200"
+              Analysis
+            </Link>
+            <Link
+              to="/compare"
+              className={`block px-3 py-2 text-base font-medium transition-colors duration-200 ${
+                isActive('/compare') ? 'text-white' : 'text-gray-300 hover:text-white'
+              }`}
               onClick={() => setIsMenuOpen(false)}
             >
-              Contact
-            </a>
+              Compare
+            </Link>
+            <Link
+              to="/about"
+              className={`block px-3 py-2 text-base font-medium transition-colors duration-200 ${
+                isActive('/about') ? 'text-white' : 'text-gray-300 hover:text-white'
+              }`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              About
+            </Link>
           </div>
         </div>
       )}
