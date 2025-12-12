@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import { MapContainer, TileLayer, Marker } from "react-leaflet";
@@ -454,7 +454,6 @@ const Analysis = () => {
                                 const maxVal = Math.max(...growthData.timeline.map((g) => 
                                   g.sector_breakdown.rural + g.sector_breakdown.urban + g.sector_breakdown.industrial
                                 ));
-                                const total = d.sector_breakdown.rural + d.sector_breakdown.urban + d.sector_breakdown.industrial;
                                 const ruralH = (d.sector_breakdown.rural / maxVal) * 180;
                                 const urbanH = (d.sector_breakdown.urban / maxVal) * 180;
                                 const industrialH = (d.sector_breakdown.industrial / maxVal) * 180;

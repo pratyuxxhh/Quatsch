@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { MapContainer, TileLayer, useMap } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -205,14 +205,6 @@ const Dashboard = () => {
   const [mapCenter, setMapCenter] = useState([20, 0]);
   const [mapZoom, setMapZoom] = useState(2);
   const [selectedYear, setSelectedYear] = useState(2024);
-<<<<<<< HEAD
-
-  const insights = useMemo(() => {
-    if (selectedRegion) {
-      return getInsights(selectedRegion, selectedYear);
-    }
-    return [];
-=======
   const [insights, setInsights] = useState([]);
   const [nightlightsData, setNightlightsData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -304,7 +296,6 @@ const Dashboard = () => {
     };
 
     fetchInsights();
->>>>>>> origin/main
   }, [selectedRegion, selectedYear]);
 
   const handleSearch = (e) => {
