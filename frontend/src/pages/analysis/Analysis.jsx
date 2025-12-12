@@ -1,11 +1,13 @@
 import React, { useState, useMemo } from "react";
+// eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
-import { MapContainer, TileLayer, Marker, useMap } from "react-leaflet";
+import { MapContainer, TileLayer, Marker } from "react-leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 
 const years = Array.from({ length: 10 }, (_, i) => 2016 + i);
 
+// eslint-disable-next-line no-unused-vars
 const generateMockGrowth = (startYear, endYear) => {
   const data = [];
   let value = 100;
@@ -17,6 +19,7 @@ const generateMockGrowth = (startYear, endYear) => {
   return data;
 };
 
+// eslint-disable-next-line no-unused-vars
 const buildGrowthInsights = (region, data) => {
   if (!region || !data.length) return [];
   const growth = data[data.length - 1].value - data[0].value;

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useState, useContext, useEffect } from 'react';
 
 const AuthContext = createContext();
@@ -58,7 +59,7 @@ export const AuthProvider = ({ children }) => {
       });
       const data = await response.json();
       return data;
-    } catch (error) {
+    } catch {
       return {
         success: false,
         message: 'Network error. Please check if the backend server is running.',
@@ -84,7 +85,7 @@ export const AuthProvider = ({ children }) => {
       }
       
       return data;
-    } catch (error) {
+    } catch {
       return {
         success: false,
         message: 'Network error. Please check if the backend server is running.',

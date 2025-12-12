@@ -30,7 +30,7 @@ const EarthGlobe = ({ earthTextureUrl }) => {
   }, [viewport.width, viewport.height]);
 
   // Rotate the globe continuously
-  useFrame((state, delta) => {
+  useFrame(() => {
     if (meshRef.current) {
       // Ease the globe into position from above
       meshRef.current.position.lerp(targetPositionRef.current, 0.02);
