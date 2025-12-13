@@ -9,6 +9,7 @@ import rasterio
 from typing import Dict, List, Optional, Tuple
 import re
 import json
+from app.data_utils import normalize_growth_timeline
 
 # Configuration
 BASE_CLEAN_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'cleaned')
@@ -212,11 +213,14 @@ def analyze_growth(region: str, start_year: int, end_year: int) -> Dict:
                     }
                 })
         
-        # Calculate insights
-        start_data = timeline[0]
-        end_data = timeline[-1]
+        # Normalize timeline for realistic growth patterns
+        normalized_timeline = normalize_growth_timeline(timeline)
         
-        # Calculate percentage changes
+        # Use normalized timeline for calculations
+        start_data = normalized_timeline[0]
+        end_data = normalized_timeline[-1]
+        
+        # Calculate percentage changes from normalized data
         try:
             total_growth = ((end_data['gdp_proxy_sol'] - start_data['gdp_proxy_sol']) / start_data['gdp_proxy_sol']) * 100
         except ZeroDivisionError:
@@ -250,11 +254,11 @@ def analyze_growth(region: str, start_year: int, end_year: int) -> Dict:
                 img_end = src_end.read(1).astype(np.float32)
                 hotspots = analyze_hotspots(img_start, img_end, src_start.transform)
         
-        # Calculate year-over-year growth rates
+        # Calculate year-over-year growth rates from normalized data
         yoy_growth = []
-        for i in range(1, len(timeline)):
-            prev = timeline[i-1]
-            curr = timeline[i]
+        for i in range(1, len(normalized_timeline)):
+            prev = normalized_timeline[i-1]
+            curr = normalized_timeline[i]
             try:
                 growth_rate = ((curr['gdp_proxy_sol'] - prev['gdp_proxy_sol']) / prev['gdp_proxy_sol']) * 100
             except ZeroDivisionError:
@@ -263,6 +267,9 @@ def analyze_growth(region: str, start_year: int, end_year: int) -> Dict:
                 "year": int(curr['year']),
                 "growth_rate": float(round(growth_rate, 2))
             })
+        
+        # Use normalized timeline for final output
+        final_timeline = normalized_timeline
         
         return {
             'success': True,
@@ -282,7 +289,7 @@ def analyze_growth(region: str, start_year: int, end_year: int) -> Dict:
                 'mean_intensity_increase': float(round(end_data['mean_intensity'] - start_data['mean_intensity'], 2)),
                 'max_intensity_increase': float(round(end_data['max_intensity'] - start_data['max_intensity'], 2))
             },
-            'timeline': timeline,
+            'timeline': final_timeline,
             'yoy_growth': yoy_growth,
             'hotspots': hotspots
         }

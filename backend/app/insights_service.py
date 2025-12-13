@@ -22,6 +22,7 @@ def normalize_region_name(region: str) -> str:
     # Map common region names to search-friendly terms
     region_map = {
         'tamil nadu': 'Tamil Nadu',
+        'jharkhand': 'Jharkhand',
         'united states': 'United States',
         'usa': 'United States',
         'uk': 'United Kingdom',
@@ -234,6 +235,7 @@ def get_insights(region: str, year: int, max_results: int = 5) -> Dict:
         'sources': sources_used,
         'count': len(insights)
     }
+
 
 
 

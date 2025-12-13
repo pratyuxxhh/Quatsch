@@ -120,6 +120,7 @@ const regionData = {
   rajasthan: { center: [27.0238, 74.2179], zoom: 6.5 },
   sikkim: { center: [27.533, 88.5122], zoom: 7.3 },
   "tamil nadu": { center: [11.1271, 78.6569], zoom: 6.8 },
+  jharkhand: { center: [23.6102, 85.2799], zoom: 6.8 },
   telangana: { center: [17.8749, 78.1], zoom: 6.8 },
   tripura: { center: [23.9408, 91.9882], zoom: 7.1 },
   uttarakhand: { center: [30.0668, 79.0193], zoom: 7.0 },
@@ -214,13 +215,19 @@ const Dashboard = () => {
 
   const API_BASE_URL = 'http://localhost:5000';
 
-  // Fetch nightlights data when year changes
+  // Fetch nightlights data when year or region changes
   useEffect(() => {
     const fetchNightlightsData = async () => {
+      if (!selectedRegion) {
+        setNightlightsData(null);
+        return;
+      }
+      
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${API_BASE_URL}/api/data/nightlights/${selectedYear}?sample_rate=15`, {
+        const regionParam = encodeURIComponent(selectedRegion);
+        const response = await fetch(`${API_BASE_URL}/api/data/nightlights/${selectedYear}?sample_rate=15&region=${regionParam}`, {
           credentials: 'include',
         });
         
@@ -250,7 +257,7 @@ const Dashboard = () => {
     };
 
     fetchNightlightsData();
-  }, [selectedYear]);
+  }, [selectedYear, selectedRegion]);
 
   // Fetch insights from API when region or year changes
   useEffect(() => {

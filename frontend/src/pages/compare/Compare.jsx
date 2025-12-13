@@ -169,7 +169,7 @@ const Compare = () => {
                       type="text"
                       value={region}
                       onChange={(e) => setRegion(e.target.value)}
-                      placeholder="e.g., Tamil Nadu, California"
+                      placeholder="e.g., Tamil Nadu, Jharkhand, California"
                       className="w-full px-3 py-2 rounded-lg bg-gray-800/80 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                       required
                     />

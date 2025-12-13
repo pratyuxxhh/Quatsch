@@ -8,8 +8,8 @@ from PIL import Image
 # CONFIGURATION
 # ================================
 # Exact paths based on your setup
-RAW_DIR = "/home/nakshtra/Desktop/whackiest/Quatsch/backend/data/raw/NightLights_Bright_Tamil Nadu"
-CLEAN_DIR = "/home/nakshtra/Desktop/whackiest/Quatsch/backend/data/cleaned/fog"
+RAW_DIR = "/home/nakshtra/Desktop/whackiest/Quatsch/backend/data/raw/NightLights_Bright_Jharkhand"
+CLEAN_DIR = "/home/nakshtra/Desktop/whackiest/Quatsch/backend/data/cleaned/NightLights_Bright_Jharkhand_cleaned"
 
 # Create output folder if it doesn't exist
 os.makedirs(CLEAN_DIR, exist_ok=True)
