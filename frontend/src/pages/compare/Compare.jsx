@@ -291,67 +291,67 @@ const Compare = () => {
                           transition: isDragging ? 'none' : 'transform 0.1s ease-out',
                         }}
                       >
-                        {/* Base Image (Year 1) */}
-                        {comparisonData.images.year1_png ? (
-                          <img
-                            src={`${API_BASE_URL}/api/images/${comparisonData.images.year1_png}`}
-                            alt={`Night Lights ${year1}`}
+                    {/* Base Image (Year 1) */}
+                    {comparisonData.images.year1_png ? (
+                      <img
+                        src={`${API_BASE_URL}/api/images/${comparisonData.images.year1_png}`}
+                        alt={`Night Lights ${year1}`}
                             className="absolute inset-0 w-full h-full object-contain"
                             draggable={false}
-                            onError={(e) => {
-                              e.target.style.display = 'none';
-                              e.target.nextElementSibling.style.display = 'flex';
-                            }}
-                          />
-                        ) : null}
-                        <div 
-                          className="absolute inset-0 w-full h-full bg-gradient-to-br from-cyan-900/50 to-gray-900 flex items-center justify-center"
-                          style={{ display: comparisonData.images.year1_png ? 'none' : 'flex' }}
-                        >
-                          <p className="text-gray-500 text-lg">{year1} Data</p>
-                        </div>
-                        
-                        {/* Overlay Image (Year 2) with transparency */}
-                        {comparisonData.images.year2_png ? (
-                          <div
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextElementSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className="absolute inset-0 w-full h-full bg-gradient-to-br from-cyan-900/50 to-gray-900 flex items-center justify-center"
+                      style={{ display: comparisonData.images.year1_png ? 'none' : 'flex' }}
+                    >
+                      <p className="text-gray-500 text-lg">{year1} Data</p>
+                    </div>
+                    
+                    {/* Overlay Image (Year 2) with transparency */}
+                    {comparisonData.images.year2_png ? (
+                      <div
                             className="absolute inset-0 w-full h-full transition-opacity duration-150 ease-out"
-                            style={{
-                              opacity: transparency / 100,
-                            }}
-                          >
-                            <img
-                              src={`${API_BASE_URL}/api/images/${comparisonData.images.year2_png}`}
-                              alt={`Night Lights ${year2}`}
+                        style={{
+                          opacity: transparency / 100,
+                        }}
+                      >
+                        <img
+                          src={`${API_BASE_URL}/api/images/${comparisonData.images.year2_png}`}
+                          alt={`Night Lights ${year2}`}
                               className="w-full h-full object-contain"
                               draggable={false}
-                              onError={(e) => {
-                                e.target.parentElement.style.display = 'none';
-                              }}
-                            />
-                          </div>
-                        ) : (
-                          <div
+                          onError={(e) => {
+                            e.target.parentElement.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div
                             className="absolute inset-0 w-full h-full transition-opacity duration-150 ease-out"
-                            style={{
-                              opacity: transparency / 100,
-                            }}
-                          >
-                            <div className="w-full h-full bg-gradient-to-br from-green-900/50 to-gray-900 flex items-center justify-center">
-                              <p className="text-gray-500 text-lg">{year2} Data</p>
-                            </div>
-                          </div>
-                        )}
+                        style={{
+                          opacity: transparency / 100,
+                        }}
+                      >
+                        <div className="w-full h-full bg-gradient-to-br from-green-900/50 to-gray-900 flex items-center justify-center">
+                          <p className="text-gray-500 text-lg">{year2} Data</p>
+                        </div>
                       </div>
-                      
-                      {/* Year Labels */}
+                    )}
+                      </div>
+                    
+                    {/* Year Labels */}
                       <div className="absolute top-4 left-4 bg-black/70 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-gray-600 z-10">
-                        <p className="text-white text-sm font-medium">
-                          {year1}
-                        </p>
-                      </div>
+                      <p className="text-white text-sm font-medium">
+                        {year1}
+                      </p>
+                    </div>
                       <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-gray-600 z-10">
-                        <p className="text-white text-sm font-medium">
-                          {year2}
+                      <p className="text-white text-sm font-medium">
+                        {year2}
                         </p>
                       </div>
                       

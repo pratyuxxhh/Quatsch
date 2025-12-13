@@ -10,9 +10,22 @@ from datetime import datetime
 
 
 # Configuration
-NEWS_API_KEY = os.environ.get('NEWS_API_KEY', '')
-NEWS_API_URL = 'https://newsapi.org/v2/everything'
+# Load from .env file explicitly
+from dotenv import load_dotenv
+load_dotenv()
+
+# Guardian API (optional - free tier with historical data)
+GUARDIAN_API_KEY = os.environ.get('GUARDIAN_API_KEY', '').strip()
+GUARDIAN_API_URL = 'https://content.guardianapis.com/search'
+
+# Wikipedia APIs (free, no key needed)
 WIKIPEDIA_API_URL = 'https://en.wikipedia.org/api/rest_v1/page/summary'
+WIKIPEDIA_EVENTS_URL = 'https://en.wikipedia.org/api/rest_v1/page/html'
+
+if GUARDIAN_API_KEY:
+    print(f"✅ Guardian API key loaded (length: {len(GUARDIAN_API_KEY)})")
+else:
+    print("ℹ️  Guardian API key not found. Using Wikipedia Events (free, no key needed).")
 
 
 def normalize_region_name(region: str) -> str:
@@ -33,9 +46,9 @@ def normalize_region_name(region: str) -> str:
     return region_map.get(region_lower, region.title())
 
 
-def fetch_news_insights(region: str, year: int, max_results: int = 5) -> List[Dict]:
+def fetch_guardian_news(region: str, year: int, max_results: int = 5) -> List[Dict]:
     """
-    Fetch news articles for a region and year using NewsAPI
+    Fetch historical news articles from The Guardian API (free tier, has historical data)
     
     Args:
         region: Region name
@@ -45,75 +58,130 @@ def fetch_news_insights(region: str, year: int, max_results: int = 5) -> List[Di
     Returns:
         List of insight dictionaries
     """
-    if not NEWS_API_KEY:
+    if not GUARDIAN_API_KEY:
         return []
     
     try:
         normalized_region = normalize_region_name(region)
         
-        # Search for news from that year
+        # Guardian API supports historical data
         params = {
-            'q': f'{normalized_region} {year}',
-            'from': f'{year}-01-01',
-            'to': f'{year}-12-31',
-            'sortBy': 'relevancy',
-            'pageSize': max_results,
-            'apiKey': NEWS_API_KEY,
-            'language': 'en'
+            'q': f'{normalized_region}',
+            'from-date': f'{year}-01-01',
+            'to-date': f'{year}-12-31',
+            'page-size': max_results,
+            'api-key': GUARDIAN_API_KEY,
+            'show-fields': 'headline,trailText,thumbnail'
         }
         
-        response = requests.get(NEWS_API_URL, params=params, timeout=10)
+        response = requests.get(GUARDIAN_API_URL, params=params, timeout=10)
         
         if response.status_code == 200:
             data = response.json()
-            articles = data.get('articles', [])
+            response_data = data.get('response', {})
+            articles = response_data.get('results', [])
+            
+            if not articles:
+                return []
             
             insights = []
             for article in articles[:max_results]:
-                title = article.get('title', '')
-                description = article.get('description', '')
+                fields = article.get('fields', {})
+                title = fields.get('headline', article.get('webTitle', ''))
+                description = fields.get('trailText', '')
                 
-                if title and description:
-                    # Create a concise insight
-                    insight_text = f"{title}"
-                    if description and len(description) > 50:
-                        # Truncate description if too long
-                        insight_text = f"{title}: {description[:150]}..."
-                    
-                    insights.append({
-                        'type': 'news',
-                        'text': insight_text,
-                        'source': article.get('source', {}).get('name', 'News'),
-                        'url': article.get('url', '')
-                    })
+                if not title:
+                    continue
+                
+                insight_text = title
+                if description and len(description) > 50:
+                    insight_text = f"{title}: {description[:150]}..."
+                
+                insights.append({
+                    'type': 'news',
+                    'text': insight_text,
+                    'source': 'The Guardian',
+                    'url': article.get('webUrl', '')
+                })
             
+            print(f"✅ Fetched {len(insights)} Guardian news insights for {normalized_region} ({year})")
             return insights
         else:
-            print(f"NewsAPI error: {response.status_code}")
+            print(f"Guardian API HTTP error {response.status_code}")
             return []
             
     except Exception as e:
-        print(f"Error fetching news insights: {str(e)}")
+        print(f"Error fetching Guardian news: {str(e)}")
         return []
 
 
-def fetch_wikipedia_insights(region: str, year: int) -> List[Dict]:
+def fetch_wikipedia_events(region: str, year: int, max_results: int = 5) -> List[Dict]:
     """
-    Fetch Wikipedia information about events in a region for a specific year
-    Fallback when NewsAPI is not available
+    Fetch historical events from Wikipedia for a region and year
+    Uses Wikipedia's event pages - free, no API key needed, has historical data
     
     Args:
         region: Region name
         year: Year to search for
+        max_results: Maximum number of results to return
     
     Returns:
         List of insight dictionaries
     """
+    insights = []
     try:
         normalized_region = normalize_region_name(region)
+        region_lower = normalized_region.lower()
         
-        # Try to get Wikipedia page for the region
-        wiki_url = f"{WIKIPEDIA_API_URL}/{normalized_region.replace(' ', '_')}"
+        # Try multiple Wikipedia page strategies
+        pages_to_try = [
+            f"{year}_in_{normalized_region.replace(' ', '_')}",  # "2024_in_Tamil_Nadu"
+            f"{year}_in_India",  # If it's an Indian state
+            f"{year}",  # General year events
+        ]
+        
+        seen_texts = set()  # Avoid duplicates
+        
+        for page_name in pages_to_try:
+            if len(insights) >= max_results:
+                break
+                
+            wiki_url = f"{WIKIPEDIA_API_URL}/{page_name}"
+            response = requests.get(wiki_url, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                extract = data.get('extract', '')
+                
+                if extract and len(extract) > 100:
+                    # Split into sentences and filter for relevant ones
+                    sentences = [s.strip() for s in extract.split('.') if s.strip()]
+                    
+                    for sentence in sentences:
+                        if len(insights) >= max_results:
+                            break
+                            
+                        sentence_lower = sentence.lower()
+                        
+                        # Prioritize sentences that mention the region or are about significant events
+                        is_relevant = (
+                            region_lower in sentence_lower or
+                            any(keyword in sentence_lower for keyword in ['development', 'growth', 'economic', 'industrial', 'urban', 'infrastructure', 'project', 'inaugurated', 'launched', 'announced'])
+                        )
+                        
+                        # Filter out very short or very long sentences
+                        if is_relevant and 40 <= len(sentence) <= 300 and sentence not in seen_texts:
+                            insights.append({
+                                'type': 'event',
+                                'text': f"{sentence}",
+                                'source': 'Wikipedia Events',
+                                'url': data.get('content_urls', {}).get('desktop', {}).get('page', '')
+                            })
+                            seen_texts.add(sentence)
+        
+        # If still not enough, get general region information with year context
+        if len(insights) < max_results:
+            wiki_url = f"{WIKIPEDIA_API_URL}/{normalized_region.replace(' ', '_')}"
         response = requests.get(wiki_url, timeout=10)
         
         if response.status_code == 200:
@@ -121,18 +189,28 @@ def fetch_wikipedia_insights(region: str, year: int) -> List[Dict]:
             extract = data.get('extract', '')
             
             if extract:
-                # Create a general insight about the region
-                return [{
+                    # Extract first meaningful paragraph
+                    paragraphs = [p.strip() for p in extract.split('\n') if len(p.strip()) > 50]
+                    if paragraphs:
+                        first_para = paragraphs[0]
+                        if len(first_para) > 200:
+                            first_para = first_para[:200] + "..."
+                        
+                        insight_text = f"In {year}, {normalized_region}: {first_para}"
+                        insights.append({
                     'type': 'general',
-                    'text': f"{normalized_region} in {year}: {extract[:200]}..." if len(extract) > 200 else f"{normalized_region}: {extract}",
+                            'text': insight_text,
                     'source': 'Wikipedia',
                     'url': data.get('content_urls', {}).get('desktop', {}).get('page', '')
-                }]
+                        })
         
-        return []
+        if insights:
+            print(f"✅ Fetched {len(insights)} Wikipedia event insights for {normalized_region} ({year})")
+        
+        return insights[:max_results]
         
     except Exception as e:
-        print(f"Error fetching Wikipedia insights: {str(e)}")
+        print(f"Error fetching Wikipedia events: {str(e)}")
         return []
 
 
@@ -207,19 +285,19 @@ def get_insights(region: str, year: int, max_results: int = 5) -> Dict:
     insights = []
     sources_used = []
     
-    # Try NewsAPI first (if API key is available)
-    if NEWS_API_KEY:
-        news_insights = fetch_news_insights(region, year, max_results)
-        if news_insights:
-            insights.extend(news_insights)
-            sources_used.append('NewsAPI')
+    # Try Guardian API first (if API key is available) - has historical data
+    if GUARDIAN_API_KEY:
+        guardian_insights = fetch_guardian_news(region, year, max_results)
+        if guardian_insights:
+            insights.extend(guardian_insights)
+            sources_used.append('The Guardian')
     
-    # If we don't have enough insights, try Wikipedia
+    # Always try Wikipedia Events (free, no key needed, has historical data)
     if len(insights) < max_results:
-        wiki_insights = fetch_wikipedia_insights(region, year)
+        wiki_insights = fetch_wikipedia_events(region, year, max_results - len(insights))
         if wiki_insights:
             insights.extend(wiki_insights)
-            sources_used.append('Wikipedia')
+            sources_used.append('Wikipedia Events')
     
     # If still not enough, add general insights
     if len(insights) < max_results:
