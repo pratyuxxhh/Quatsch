@@ -1,7 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const HeroSectionAnimationWrapper = ({ chaosMode = false }) => {
+  const navigate = useNavigate();
   // Animation variants for staggered fade-in
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -73,7 +75,10 @@ const HeroSectionAnimationWrapper = ({ chaosMode = false }) => {
         animate={chaosMode ? chaosAnimation : "visible"}
         className="flex lg:block justify-center lg:justify-start"
       >
-        <button className="group relative inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 overflow-hidden">
+        <button 
+          onClick={() => navigate('/dashboard')}
+          className="group relative inline-flex items-center justify-center px-8 py-4 text-base font-semibold text-white bg-gradient-to-r from-cyan-500 to-blue-600 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 overflow-hidden cursor-pointer"
+        >
           <span className="relative z-10">Start Your Journey</span>
           <span className="relative z-10 ml-2 group-hover:translate-x-1 transition-transform duration-300">
             →
