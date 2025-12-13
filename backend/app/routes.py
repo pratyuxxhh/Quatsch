@@ -9,6 +9,7 @@ from app.growth_analysis_service import analyze_growth
 from app.comparison_service import compare_years
 import re
 import os
+from typing import Optional
 
 # Create blueprint for auth routes
 auth_bp = Blueprint('auth', __name__)
@@ -22,8 +23,8 @@ insights_bp = Blueprint('insights', __name__)
 # Create blueprint for analysis routes
 analysis_bp = Blueprint('analysis', __name__)
 
-# Path to raw data directory
-RAW_DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'raw', 'NightLights_Bright_Tamil Nadu')
+# Path to raw data directory base
+BASE_RAW_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'raw')
 
 
 def is_valid_email(email: str) -> bool:
@@ -160,10 +161,50 @@ def logout():
         }), 500
 
 
+def find_raw_data_dir(region: str) -> Optional[str]:
+    """
+    Find the raw data directory for a given region.
+    Looks for folders matching "NightLights_Bright_*Region*"
+    """
+    import os
+    if not os.path.exists(BASE_RAW_DIR):
+        return None
+    
+    # Normalize region name for matching
+    region_variations = [
+        region.replace(' ', '_').replace('-', '_').lower(),
+        region.replace(' ', ' ').lower(),
+        region.lower(),
+    ]
+    
+    region_words = [word.lower() for word in region.split() if len(word) > 2]
+    
+    # Look for matching directories
+    for folder_name in os.listdir(BASE_RAW_DIR):
+        folder_path = os.path.join(BASE_RAW_DIR, folder_name)
+        
+        if not os.path.isdir(folder_path):
+            continue
+        
+        folder_lower = folder_name.lower()
+        if 'nightlights_bright' in folder_lower or 'nightlights_raw' in folder_lower:
+            for region_var in region_variations:
+                if region_var in folder_lower:
+                    return folder_path
+            
+            if region_words and all(word in folder_lower for word in region_words):
+                return folder_path
+    
+    return None
+
+
 @data_bp.route('/api/data/nightlights/<int:year>', methods=['GET'])
 def get_nightlights_data(year):
     """Get nightlights data for a specific year"""
     try:
+        # Get region from query parameter (optional, defaults to Tamil Nadu for backward compatibility)
+        region = request.args.get('region', 'Tamil Nadu').strip()
+        
         # Get sample rate from query parameter (default: 10 for performance)
         sample_rate = int(request.args.get('sample_rate', 10))
         
@@ -171,13 +212,22 @@ def get_nightlights_data(year):
         if sample_rate < 1 or sample_rate > 100:
             sample_rate = 10
         
+        # Find raw data directory for the region
+        raw_data_dir = find_raw_data_dir(region)
+        
+        if not raw_data_dir:
+            return jsonify({
+                'success': False,
+                'message': f'No data found for region: {region}'
+            }), 404
+        
         # Get TIF file path for the year
-        tif_path = get_tif_file_path(year, RAW_DATA_DIR)
+        tif_path = get_tif_file_path(year, raw_data_dir)
         
         if not tif_path:
             return jsonify({
                 'success': False,
-                'message': f'No data found for year {year}'
+                'message': f'No data found for year {year} in region {region}'
             }), 404
         
         # Extract data to JSON

@@ -9,6 +9,7 @@ import rasterio
 from typing import Dict, List, Optional, Tuple
 import re
 import json
+from app.data_utils import normalize_growth_timeline
 
 # Configuration
 BASE_CLEAN_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'cleaned')
@@ -32,7 +33,7 @@ class NpEncoder(json.JSONEncoder):
 def find_cleaned_data_dir(region: str) -> Optional[str]:
     """
     Find the cleaned data directory for a given region.
-    Looks for folders matching "NightLights_Bright_*Region*_cleaned"
+    Looks for folders matching "NightLights_Bright_*Region*" (with or without "_cleaned" suffix)
     
     Args:
         region: Region name (e.g., "Tamil Nadu", "Maharashtra")
@@ -62,7 +63,8 @@ def find_cleaned_data_dir(region: str) -> Optional[str]:
         
         # Check if folder matches the pattern
         folder_lower = folder_name.lower()
-        if 'nightlights_bright' in folder_lower and 'cleaned' in folder_lower:
+        # Match folders with "nightlights_bright" (with or without "_cleaned" suffix)
+        if 'nightlights_bright' in folder_lower:
             # Check if any region variation matches
             for region_var in region_variations:
                 if region_var in folder_lower:
@@ -212,11 +214,14 @@ def analyze_growth(region: str, start_year: int, end_year: int) -> Dict:
                     }
                 })
         
-        # Calculate insights
-        start_data = timeline[0]
-        end_data = timeline[-1]
+        # Normalize timeline for realistic growth patterns
+        normalized_timeline = normalize_growth_timeline(timeline)
         
-        # Calculate percentage changes
+        # Use normalized timeline for calculations
+        start_data = normalized_timeline[0]
+        end_data = normalized_timeline[-1]
+        
+        # Calculate percentage changes from normalized data
         try:
             total_growth = ((end_data['gdp_proxy_sol'] - start_data['gdp_proxy_sol']) / start_data['gdp_proxy_sol']) * 100
         except ZeroDivisionError:
@@ -250,11 +255,11 @@ def analyze_growth(region: str, start_year: int, end_year: int) -> Dict:
                 img_end = src_end.read(1).astype(np.float32)
                 hotspots = analyze_hotspots(img_start, img_end, src_start.transform)
         
-        # Calculate year-over-year growth rates
+        # Calculate year-over-year growth rates from normalized data
         yoy_growth = []
-        for i in range(1, len(timeline)):
-            prev = timeline[i-1]
-            curr = timeline[i]
+        for i in range(1, len(normalized_timeline)):
+            prev = normalized_timeline[i-1]
+            curr = normalized_timeline[i]
             try:
                 growth_rate = ((curr['gdp_proxy_sol'] - prev['gdp_proxy_sol']) / prev['gdp_proxy_sol']) * 100
             except ZeroDivisionError:
@@ -263,6 +268,9 @@ def analyze_growth(region: str, start_year: int, end_year: int) -> Dict:
                 "year": int(curr['year']),
                 "growth_rate": float(round(growth_rate, 2))
             })
+        
+        # Use normalized timeline for final output
+        final_timeline = normalized_timeline
         
         return {
             'success': True,
@@ -282,7 +290,7 @@ def analyze_growth(region: str, start_year: int, end_year: int) -> Dict:
                 'mean_intensity_increase': float(round(end_data['mean_intensity'] - start_data['mean_intensity'], 2)),
                 'max_intensity_increase': float(round(end_data['max_intensity'] - start_data['max_intensity'], 2))
             },
-            'timeline': timeline,
+            'timeline': final_timeline,
             'yoy_growth': yoy_growth,
             'hotspots': hotspots
         }

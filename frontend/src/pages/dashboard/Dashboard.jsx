@@ -120,6 +120,7 @@ const regionData = {
   rajasthan: { center: [27.0238, 74.2179], zoom: 6.5 },
   sikkim: { center: [27.533, 88.5122], zoom: 7.3 },
   "tamil nadu": { center: [11.1271, 78.6569], zoom: 6.8 },
+  jharkhand: { center: [23.6102, 85.2799], zoom: 6.8 },
   telangana: { center: [17.8749, 78.1], zoom: 6.8 },
   tripura: { center: [23.9408, 91.9882], zoom: 7.1 },
   uttarakhand: { center: [30.0668, 79.0193], zoom: 7.0 },
@@ -134,70 +135,6 @@ const regionData = {
   puducherry: { center: [11.9416, 79.8083], zoom: 7.2 },
 };
 
-const getInsights = (region, year) => {
-  const insights = {
-    "united states": {
-      2016: [
-        "Presidential Election: Donald Trump elected as 45th President",
-        "Space Exploration: SpaceX successfully lands reusable rocket",
-        "Technology: Apple releases iPhone 7",
-      ],
-      2017: [
-        "Politics: Inauguration of President Trump",
-        "Technology: Amazon acquires Whole Foods",
-        "Entertainment: Wonder Woman breaks box office records",
-      ],
-      2018: [
-        "Technology: Facebook faces data privacy concerns",
-        "Sports: Philadelphia Eagles win Super Bowl LII",
-        "Science: NASA launches Parker Solar Probe",
-      ],
-      2019: [
-        "Technology: 5G networks begin rollout",
-        "Entertainment: Avengers: Endgame breaks box office records",
-        "Climate: Greta Thunberg leads climate strikes",
-      ],
-      2020: [
-        "Health: COVID-19 pandemic begins",
-        "Politics: Joe Biden elected as 46th President",
-        "Technology: Remote work becomes mainstream",
-      ],
-      2021: [
-        "Health: COVID-19 vaccine rollout begins",
-        "Technology: Cryptocurrency reaches new heights",
-        "Climate: COP26 climate summit held",
-      ],
-      2022: [
-        "Technology: ChatGPT launches, AI revolution begins",
-        "Sports: Argentina wins FIFA World Cup",
-        "Space: James Webb Space Telescope sends first images",
-      ],
-      2023: [
-        "Technology: AI tools become mainstream",
-        "Climate: Record-breaking temperatures globally",
-        "Entertainment: Barbie movie becomes cultural phenomenon",
-      ],
-      2024: [
-        "Technology: AI continues rapid advancement",
-        "Politics: Major elections worldwide",
-        "Space: Private space missions increase",
-      ],
-      2025: [
-        "Technology: Quantum computing advances",
-        "Climate: Renewable energy adoption accelerates",
-        "Science: Breakthrough medical discoveries",
-      ],
-    },
-  };
-
-  const defaultInsights = [
-    `Exploring ${region || "the world"} in ${year}`,
-    "Historical data and trends available",
-    "Regional analysis and insights",
-  ];
-
-  return insights[region?.toLowerCase()]?.[year] || defaultInsights;
-};
 
 const Dashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
@@ -205,22 +142,26 @@ const Dashboard = () => {
   const [mapCenter, setMapCenter] = useState([20, 0]);
   const [mapZoom, setMapZoom] = useState(2);
   const [selectedYear, setSelectedYear] = useState(2024);
-  const [insights, setInsights] = useState([]);
   const [nightlightsData, setNightlightsData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [insightsLoading, setInsightsLoading] = useState(false);
-  const [insightsError, setInsightsError] = useState(null);
+  const [viewMode, setViewMode] = useState('normal'); // 'normal' or 'heatmap'
 
   const API_BASE_URL = 'http://localhost:5000';
 
-  // Fetch nightlights data when year changes
+  // Fetch nightlights data when year or region changes
   useEffect(() => {
     const fetchNightlightsData = async () => {
+      if (!selectedRegion) {
+        setNightlightsData(null);
+        return;
+      }
+      
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(`${API_BASE_URL}/api/data/nightlights/${selectedYear}?sample_rate=15`, {
+        const regionParam = encodeURIComponent(selectedRegion);
+        const response = await fetch(`${API_BASE_URL}/api/data/nightlights/${selectedYear}?sample_rate=15&region=${regionParam}`, {
           credentials: 'include',
         });
         
@@ -250,53 +191,8 @@ const Dashboard = () => {
     };
 
     fetchNightlightsData();
-  }, [selectedYear]);
+  }, [selectedYear, selectedRegion]);
 
-  // Fetch insights from API when region or year changes
-  useEffect(() => {
-    const fetchInsights = async () => {
-      if (!selectedRegion) {
-        setInsights([]);
-        return;
-      }
-
-      setInsightsLoading(true);
-      setInsightsError(null);
-      
-      try {
-        const response = await fetch(
-          `${API_BASE_URL}/api/insights?region=${encodeURIComponent(selectedRegion)}&year=${selectedYear}&max_results=5`,
-          {
-            credentials: 'include',
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error(`Failed to fetch insights: ${response.status}`);
-        }
-
-        const result = await response.json();
-
-        if (result.success && result.insights) {
-          setInsights(result.insights);
-        } else {
-          // Fallback to local insights if API fails
-          const fallbackInsights = getInsights(selectedRegion, selectedYear);
-          setInsights(fallbackInsights);
-        }
-      } catch (err) {
-        console.error('Error fetching insights:', err);
-        setInsightsError(err.message);
-        // Fallback to local insights on error
-        const fallbackInsights = getInsights(selectedRegion, selectedYear);
-        setInsights(fallbackInsights);
-      } finally {
-        setInsightsLoading(false);
-      }
-    };
-
-    fetchInsights();
-  }, [selectedRegion, selectedYear]);
 
   const handleSearch = (e) => {
     e.preventDefault();
@@ -363,34 +259,95 @@ const Dashboard = () => {
                 
                 {/* Display nightlights data points */}
                 {nightlightsData && nightlightsData.data_points && nightlightsData.data_points.map((point, index) => {
-                  // Calculate color based on brightness value (cyan scale)
                   const maxValue = nightlightsData.metadata?.statistics?.max || 100;
                   const normalizedValue = Math.min(point.value / maxValue, 1);
-                  const opacity = Math.max(normalizedValue * 0.8, 0.3);
-                  const radius = Math.max(normalizedValue * 8, 2);
                   
-                  return (
-                    <CircleMarker
-                      key={index}
-                      center={[point.lat, point.lon]}
-                      radius={radius}
-                      pathOptions={{
-                        color: '#06b6d4',
-                        fillColor: '#06b6d4',
-                        fillOpacity: opacity,
-                        weight: 0.5,
-                      }}
-                    >
-                      <Popup>
-                        <div className="text-sm">
-                          <p className="font-semibold">Nightlights Data</p>
-                          <p>Lat: {point.lat.toFixed(4)}</p>
-                          <p>Lon: {point.lon.toFixed(4)}</p>
-                          <p>Radiance: {point.value.toFixed(2)} nW</p>
-                        </div>
-                      </Popup>
-                    </CircleMarker>
-                  );
+                  if (viewMode === 'heatmap') {
+                    // Heatmap color gradient
+                    let r, g, b;
+                    if (normalizedValue < 0.25) {
+                      // Blue to Cyan
+                      const t = normalizedValue / 0.25;
+                      r = Math.floor(0 + t * 0);
+                      g = Math.floor(100 + t * 155);
+                      b = Math.floor(255 - t * 55);
+                    } else if (normalizedValue < 0.5) {
+                      // Cyan to Yellow
+                      const t = (normalizedValue - 0.25) / 0.25;
+                      r = Math.floor(0 + t * 255);
+                      g = 255;
+                      b = Math.floor(200 - t * 200);
+                    } else if (normalizedValue < 0.75) {
+                      // Yellow to Orange
+                      const t = (normalizedValue - 0.5) / 0.25;
+                      r = 255;
+                      g = Math.floor(255 - t * 100);
+                      b = 0;
+                    } else {
+                      // Orange to Red
+                      const t = (normalizedValue - 0.75) / 0.25;
+                      r = 255;
+                      g = Math.floor(155 - t * 155);
+                      b = 0;
+                    }
+                    
+                    const color = `rgb(${r}, ${g}, ${b})`;
+                    const opacity = Math.max(normalizedValue * 0.9, 0.4);
+                    const radius = Math.max(normalizedValue * 12 + 3, 3);
+                    
+                    return (
+                      <CircleMarker
+                        key={index}
+                        center={[point.lat, point.lon]}
+                        radius={radius}
+                        pathOptions={{
+                          color: color,
+                          fillColor: color,
+                          fillOpacity: opacity,
+                          weight: 0,
+                        }}
+                      >
+                        <Popup>
+                          <div className="text-sm">
+                            <p className="font-semibold">Nightlights Intensity</p>
+                            <p>Lat: {point.lat.toFixed(4)}</p>
+                            <p>Lon: {point.lon.toFixed(4)}</p>
+                            <p>Radiance: {point.value.toFixed(2)} nW</p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              Intensity: {Math.round(normalizedValue * 100)}%
+                            </p>
+                          </div>
+                        </Popup>
+                      </CircleMarker>
+                    );
+                  } else {
+                    // Normal view: cyan markers
+                    const opacity = Math.max(normalizedValue * 0.8, 0.3);
+                    const radius = Math.max(normalizedValue * 8, 2);
+                    
+                    return (
+                      <CircleMarker
+                        key={index}
+                        center={[point.lat, point.lon]}
+                        radius={radius}
+                        pathOptions={{
+                          color: '#06b6d4',
+                          fillColor: '#06b6d4',
+                          fillOpacity: opacity,
+                          weight: 0.5,
+                        }}
+                      >
+                        <Popup>
+                          <div className="text-sm">
+                            <p className="font-semibold">Nightlights Data</p>
+                            <p>Lat: {point.lat.toFixed(4)}</p>
+                            <p>Lon: {point.lon.toFixed(4)}</p>
+                            <p>Radiance: {point.value.toFixed(2)} nW</p>
+                          </div>
+                        </Popup>
+                      </CircleMarker>
+                    );
+                  }
                 })}
               </MapContainer>
               {loading && (
@@ -418,7 +375,7 @@ const Dashboard = () => {
                 </div>
               )}
               {selectedRegion && (
-                <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-lg border border-gray-600">
+                <div className="absolute top-4 right-4 bg-black/70 backdrop-blur-sm px-4 py-2 rounded-lg border border-gray-600 z-50">
                   <p className="text-white text-sm font-medium">
                     Region: <span className="text-cyan-400 capitalize">{selectedRegion}</span>
                   </p>
@@ -450,83 +407,137 @@ const Dashboard = () => {
 
           <div className="lg:col-span-1 h-full min-h-0">
             <div className="bg-gray-900/80 backdrop-blur-sm rounded-lg p-6 border border-gray-700 h-full overflow-auto">
-              <h2 className="text-2xl font-bold text-white mb-4">Insights</h2>
+              <h2 className="text-2xl font-bold text-white mb-4">
+                {viewMode === 'heatmap' ? 'Heatmap Legend' : 'Data Legend'}
+              </h2>
+
+              {/* View Mode Toggle Buttons */}
+              <div className="mb-6">
+                <p className="text-gray-400 text-sm mb-3">View Mode</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setViewMode('normal')}
+                    className={`flex-1 px-5 py-3 rounded-lg text-base font-semibold transition-all ${
+                      viewMode === 'normal'
+                        ? 'bg-cyan-500 text-white shadow-lg shadow-cyan-500/50'
+                        : 'bg-gray-800/80 text-gray-300 border-2 border-gray-600 hover:bg-gray-700/80 hover:border-cyan-500/50'
+                    }`}
+                  >
+                    Normal
+                  </button>
+                  <button
+                    onClick={() => setViewMode('heatmap')}
+                    className={`flex-1 px-5 py-3 rounded-lg text-base font-semibold transition-all ${
+                      viewMode === 'heatmap'
+                        ? 'bg-red-500 text-white shadow-lg shadow-red-500/50'
+                        : 'bg-gray-800/80 text-gray-300 border-2 border-gray-600 hover:bg-gray-700/80 hover:border-red-500/50'
+                    }`}
+                  >
+                    Heatmap
+                  </button>
+                </div>
+              </div>
 
               {selectedRegion ? (
-                <div>
+                <div className="space-y-4">
                   <div className="mb-4 pb-4 border-b border-gray-700">
                     <p className="text-cyan-400 font-semibold capitalize">{selectedRegion}</p>
                     <p className="text-gray-400 text-sm">{selectedYear}</p>
                   </div>
 
-                  {insightsLoading ? (
-                    <div className="space-y-4">
-                      {[1, 2, 3].map((i) => (
-                        <div
-                          key={i}
-                          className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 animate-pulse"
-                        >
-                          <div className="flex items-start">
-                            <div className="flex-shrink-0 w-2 h-2 bg-gray-600 rounded-full mt-2 mr-3"></div>
-                            <div className="flex-1 space-y-2">
-                              <div className="h-4 bg-gray-700 rounded w-3/4"></div>
-                              <div className="h-4 bg-gray-700 rounded w-1/2"></div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : insightsError ? (
-                    <div className="p-4 bg-red-900/30 rounded-lg border border-red-700">
-                      <p className="text-red-300 text-sm">
-                        Error loading insights: {insightsError}
-                      </p>
-                      <p className="text-gray-400 text-xs mt-2">
-                        Showing fallback insights
-                      </p>
-                    </div>
-                  ) : insights.length > 0 ? (
-                    <div className="space-y-4">
-                      {insights.map((insight, index) => {
-                        // Handle both string and object formats
-                        const insightText = typeof insight === 'string' ? insight : insight.text || insight;
-                        const insightSource = typeof insight === 'object' ? insight.source : null;
-                        const insightUrl = typeof insight === 'object' ? insight.url : null;
-                        
-                        return (
-                          <div
-                            key={index}
-                            className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 hover:border-cyan-500/50 transition-colors"
-                          >
-                            <div className="flex items-start">
-                              <div className="flex-shrink-0 w-2 h-2 bg-cyan-400 rounded-full mt-2 mr-3"></div>
-                              <div className="flex-1">
-                                <p className="text-gray-300 text-sm leading-relaxed">{insightText}</p>
-                                {insightSource && (
-                                  <p className="text-gray-500 text-xs mt-2">
-                                    Source: {insightSource}
-                                  </p>
-                                )}
-                                {insightUrl && (
-                                  <a
-                                    href={insightUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-cyan-400 text-xs mt-1 hover:underline inline-block"
-                                  >
-                                    Read more →
-                                  </a>
-                                )}
+                  {nightlightsData ? (
+                    <>
+                      <div className="space-y-3">
+                        {viewMode === 'heatmap' && (
+                          <div>
+                            <p className="text-gray-300 text-sm mb-2">Intensity Scale</p>
+                            <div className="relative h-6 bg-gradient-to-r from-blue-500 via-cyan-400 via-yellow-400 to-red-500 rounded overflow-hidden">
+                              <div className="absolute inset-0 flex items-center justify-between px-2 text-xs text-white font-semibold">
+                                <span>Low</span>
+                                <span>High</span>
                               </div>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
+                        )}
+
+                        <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                          <p className="text-gray-400 text-xs mb-2">Statistics</p>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-300">Data Points</span>
+                              <span className="text-cyan-400 font-semibold">
+                                {nightlightsData.data_points?.length || 0}
+                              </span>
+                            </div>
+                            {nightlightsData.metadata?.statistics && (
+                              <>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-300">Max Intensity</span>
+                                  <span className="text-yellow-400 font-semibold">
+                                    {nightlightsData.metadata.statistics.max.toFixed(2)} nW
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-300">Mean Intensity</span>
+                                  <span className="text-cyan-400 font-semibold">
+                                    {nightlightsData.metadata.statistics.mean_lit.toFixed(2)} nW
+                                  </span>
+                                </div>
+                                <div className="flex justify-between">
+                                  <span className="text-gray-300">Lit Pixels</span>
+                                  <span className="text-green-400 font-semibold">
+                                    {nightlightsData.metadata.statistics.lit_pixels.toLocaleString()}
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+
+                        {viewMode === 'heatmap' && (
+                          <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                            <p className="text-gray-400 text-xs mb-2">Color Guide</p>
+                            <div className="space-y-2 text-xs">
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded bg-blue-500"></div>
+                                <span className="text-gray-300">Low Intensity (0-25%)</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded bg-cyan-400"></div>
+                                <span className="text-gray-300">Medium (25-50%)</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded bg-yellow-400"></div>
+                                <span className="text-gray-300">High (50-75%)</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded bg-red-500"></div>
+                                <span className="text-gray-300">Very High (75-100%)</span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {viewMode === 'normal' && (
+                          <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                            <p className="text-gray-400 text-xs mb-2">View Mode</p>
+                            <div className="space-y-2 text-xs">
+                              <div className="flex items-center gap-2">
+                                <div className="w-4 h-4 rounded-full bg-cyan-400"></div>
+                                <span className="text-gray-300">Cyan markers show nightlights intensity</span>
+                              </div>
+                              <p className="text-gray-400 text-xs mt-3">
+                                Switch to Heatmap view for color-coded intensity visualization
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </>
                   ) : (
                     <div className="text-center py-8">
                       <p className="text-gray-400 text-sm">
-                        No insights available for this region and year.
+                        Select a region and year to view heatmap data.
                       </p>
                     </div>
                   )}
@@ -543,11 +554,11 @@ const Dashboard = () => {
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                      d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"
                     />
                   </svg>
                   <p className="text-gray-400 text-sm">
-                    Search for a region to view insights and events for the selected year.
+                    Search for a region to view the nightlights heatmap.
                   </p>
                 </div>
               )}

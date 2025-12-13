@@ -217,7 +217,7 @@ const Analysis = () => {
                       type="text"
                       value={region}
                       onChange={(e) => setRegion(e.target.value)}
-                      placeholder="e.g., California, Maharashtra, Europe"
+                      placeholder="e.g., Tamil Nadu, Maharashtra, Jharkhand, Uttar Pradesh, California"
                       className="w-full px-3 py-2 rounded-lg bg-gray-800/80 border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent"
                     />
                   </div>
