@@ -36,6 +36,7 @@ def normalize_region_name(region: str) -> str:
     region_map = {
         'tamil nadu': 'Tamil Nadu',
         'jharkhand': 'Jharkhand',
+        'uttar pradesh': 'Uttar Pradesh',
         'united states': 'United States',
         'usa': 'United States',
         'uk': 'United Kingdom',

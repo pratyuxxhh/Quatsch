@@ -187,7 +187,7 @@ def find_raw_data_dir(region: str) -> Optional[str]:
             continue
         
         folder_lower = folder_name.lower()
-        if 'nightlights_bright' in folder_lower:
+        if 'nightlights_bright' in folder_lower or 'nightlights_raw' in folder_lower:
             for region_var in region_variations:
                 if region_var in folder_lower:
                     return folder_path

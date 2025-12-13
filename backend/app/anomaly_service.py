@@ -22,7 +22,7 @@ MIN_CLUSTER_SIZE = 3          # Must be 3+ connected pixels (filters sensor glit
 def find_cleaned_data_dir(region: str) -> Optional[str]:
     """
     Find the cleaned data directory for a given region.
-    Looks for folders matching "NightLights_Bright_*Region*_cleaned"
+    Looks for folders matching "NightLights_Bright_*Region*" (with or without "_cleaned" suffix)
     
     Args:
         region: Region name (e.g., "Tamil Nadu", "Maharashtra")
@@ -45,7 +45,8 @@ def find_cleaned_data_dir(region: str) -> Optional[str]:
         
         # Check if folder matches the pattern
         folder_lower = folder_name.lower()
-        if 'nightlights_bright' in folder_lower and 'cleaned' in folder_lower:
+        # Match folders with "nightlights_bright" (with or without "_cleaned" suffix)
+        if 'nightlights_bright' in folder_lower:
             # Check if region name is in folder name
             if region_normalized in folder_lower or any(
                 word in folder_lower for word in region_normalized.split('_')
@@ -236,6 +237,7 @@ def detect_anomalies(region: str) -> Dict:
             'message': f'Error during anomaly detection: {str(e)}',
             'anomalies': []
         }
+
 
 
 

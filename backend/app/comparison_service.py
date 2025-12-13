@@ -16,7 +16,7 @@ BASE_CLEAN_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data'
 def find_cleaned_data_dir(region: str) -> Optional[str]:
     """
     Find the cleaned data directory for a given region.
-    Looks for folders matching "NightLights_Bright_*Region*_cleaned"
+    Looks for folders matching "NightLights_Bright_*Region*" (with or without "_cleaned" suffix)
     
     Args:
         region: Region name (e.g., "Tamil Nadu", "Maharashtra")
@@ -46,7 +46,8 @@ def find_cleaned_data_dir(region: str) -> Optional[str]:
         
         # Check if folder matches the pattern
         folder_lower = folder_name.lower()
-        if 'nightlights_bright' in folder_lower and 'cleaned' in folder_lower:
+        # Match folders with "nightlights_bright" (with or without "_cleaned" suffix)
+        if 'nightlights_bright' in folder_lower:
             # Check if any region variation matches
             for region_var in region_variations:
                 if region_var in folder_lower:
