@@ -21,6 +21,14 @@ A comprehensive web application for analyzing satellite nightlights data to unde
 - [Troubleshooting](#-troubleshooting)
 - [Contributing](#-contributing)
 
+
+## 🎥 Project Demo
+
+<p align="center">
+  <a href="https://youtu.be/Gq-UjFgZVSo">
+    <img src="https://img.youtube.com/vi/Gq-UjFgZVSo/maxresdefault.jpg" width="600">
+  </a>
+</p>
 ## ✨ Features
 
 ### 🗺️ Interactive Dashboard
